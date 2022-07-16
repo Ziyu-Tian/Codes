@@ -1,0 +1,13 @@
+data=xlsread('TorqueTransducer.xls',1,'A2:B13');
+voltage=data(:,1);
+torque=data(:,2);
+plot(voltage,torque,'ko');
+p=polyfit(voltage,torque,1);
+torque1=@(x)polyval(p,x);
+figure(1);
+plot(voltage,torque,'ko');
+hold;
+fplot(torque1,[-0.2,2.5],'k--');
+xlabel('Voltage(V)');
+ylabel('Torque(Nm)');
+legend('Measured','Fitted')
