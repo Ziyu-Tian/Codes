@@ -42,6 +42,9 @@ Temporary Items
 # Picture
 *.png
 *.pdf
+*.fig
+*.jpg
+*.jpeg
 
 # C
 
