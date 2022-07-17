@@ -85,6 +85,7 @@ Temporary Items
 *.i*86
 *.x86_64
 *.hex
+*.exec
 
 # Debug files
 *.Debug/
