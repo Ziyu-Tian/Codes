@@ -9,15 +9,13 @@ int main()
         {
         printf("%d\n",recursive(a));
         }
-        
-        
     }
     
     return 0;
 }
 int recursive(int n)
 {
-    if (n <=3)
+    if (n <=4)
     {
         return n;
     }
