@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include<math.h>
-#define e 2.7182838
-int factorial(int n);
-int factorial(int n)
+long long int factorial(int n);// 'int' type is not enough for 20!
+long long int factorial(int n)
 {
     if (n > 1)
     {
@@ -15,18 +14,13 @@ int factorial(int n)
 }
 int main()
 {
-    int n,x;
-    int sum = 1;
-    printf("Please input the n: ");
+    int n;
+    long long int sum = 0;
     scanf("%d", &n);
-    printf("Please input the x: ");
-    scanf("%d",&x);
     for (int i = 1; i <=n; i++)
     {
-        sum =sum+ (pow(x,i)/factorial(i));
+        sum += factorial(i);
     }
-    double series=exp(x);
-    printf("The answer is %d\n", sum);
-    printf("%.2f",series);
+    printf("%lld", sum);
     return 0;
 }
