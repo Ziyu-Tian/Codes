@@ -5,18 +5,19 @@ int main()
 {
     int n;
     scanf("%d", &n);
-
-    if (PerfectNum(n) == 1)
+    for (int i = 1; i < n; i++)
     {
-        FactorsPrint(n);
+        if (PerfectNum(i) == 1)
+        {
+            FactorsPrint(i);
+        }
     }
-
     return 0;
 }
 int PerfectNum(int n)
 {
     int sum = 0;
-    for (size_t i = 1; i < n; i++)
+    for (int i = 1; i < n; i++)
     {
         if (n % i == 0)
         {
@@ -32,14 +33,15 @@ int PerfectNum(int n)
         return -1;
     }
 }
-void FactorsPrint(size_t n)
+void FactorsPrint(int n)
 {
-    printf("%zu its factors are ", n);
-    for (size_t i = 1; i < n; i++)
+    printf("%d its factors are ", n);
+    for (int i = 1; i < n; i++)
     {
-        if (n % 1 == 0)
+        if (n % i == 0)
         {
-            (n == i) ? printf("%zu ", i) : printf("%zu\n", i);
+            printf("%d ", i);
         }
     }
+    printf("\n");
 }
