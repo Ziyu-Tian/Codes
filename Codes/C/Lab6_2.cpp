@@ -1,4 +1,3 @@
-/*
 #include <stdio.h>
 #include <string.h>
 void sort(char str[]);
@@ -39,7 +38,8 @@ int main()
     return 0;
     
 }
-*/
+
+/*
 #include <stdio.h>
 #define SIZE 20
 
@@ -59,4 +59,6 @@ size_t getSize(float *ptr)
 {
    return sizeof(ptr);
 }
+*/
+
 
