@@ -1,20 +1,34 @@
 #include <stdio.h>
+void SelectionSort(int array[], int length);
 int main()
 {
-    int i=1,sum=0;
-    int n;
-    printf("Please input your number: ");
-    scanf("%d",&n);
-    do
+    int a[10];
+    for (int i = 0; i < 10; i++)
     {
-        while (i<=n)
-        {
-            sum=sum+i;
-            i=i+1;
-        }
-        break;
-    } while (n>0);
-    printf("The sum is : %d",sum);
-    
+        scanf("%d", &a[i]);
+    }
+    int length = sizeof(a) / sizeof(int);
+    SelectionSort(a, length);
+    for (int i = 0; i < length; i++)
+    {
+        printf("%d\n", a[i]);
+    }
     return 0;
+}
+void SelectionSort(int array[], int length)
+{
+    for (int i = 0; i < length; i++)
+    {
+        int min = i;
+        for (int j = i; j < length; j++)
+        {
+            if (array[j] < array[min])
+            {
+                min = j;
+            }
+        }
+        int temp = array[i];
+        array[i] = array[min];
+        array[min] = temp;
+    }
 }

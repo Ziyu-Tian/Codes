@@ -1,13 +1,27 @@
-#include <stdio.h>
-void SelectionSort(int array[], int length);
+#include<stdio.h>
+void SelectionSort(int array[],int length);
+int main()
+{
+    int a[10];
+    for (int i = 0; i < 10; i++)
+    {
+        scanf("%d",&a[i]);
+    }
+    int length = sizeof(a) / sizeof(int);
+    SelectionSort(a, length);
+    for (int i = 0; i < length; i++)
+    {
+        printf("%d\n", a[i]);
+    }
+    return 0;
+}
 void SelectionSort(int array[], int length)
 {
-    /*
-    int i, j;
-    for (i = 0; i < length; i++)
+    
+    for (int i = 0; i < length; i++)
     {
         int min = array[i];
-        for (j = i; j < length; j++)//Firstly find the min num
+        for (int j = i; j < length; j++)//Firstly find the min num
         {
             if (array[j] < min)
             {
@@ -18,30 +32,5 @@ void SelectionSort(int array[], int length)
         }
         array[i]=min;
     }
-    */
-    for (int i = 0; i < length; i++)
-    {
-        int min = i;
-        for (int j = i; j < length; j++)
-        {
-            if (array[j] < array[i])
-            {
-                min = j;
-            }
-        }
-        int temp = array[i];
-        array[i] = array[min];
-        array[min] = temp;
-    }
-}
-int main()
-{
-    int a[] = {3, 4, 9, 66, 5, 11, 2};
-    int length = sizeof(a) / sizeof(int);
-    SelectionSort(a, length);
-    for (int i = 0; i < length; i++)
-    {
-        printf("%d ", a[i]);
-    }
-    return 0;
+ 
 }
