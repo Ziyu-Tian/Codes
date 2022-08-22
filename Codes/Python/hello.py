@@ -8,8 +8,8 @@ from pathlib import Path
 from scipy import stats
 import matplotlib.pyplot as plt
 import seaborn as sns
-# path=Path('/Users/ziyutian/Downloads')
-path = Path("C:/Users/c0090836/Downloads")
+path=Path('/Users/ziyutian/Downloads')
+#path = Path("C:/Users/c0090836/Downloads")
 electric = pd.read_csv(path / "electric.csv")
 electric
 # %%
