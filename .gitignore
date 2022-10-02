@@ -93,6 +93,7 @@ Temporary Items
 *.su
 *.idb
 *.pdb
+*.dSYM
 
 # Kernel Module Compile Results
 *.mod*
