@@ -11,7 +11,7 @@ int main()
     sqr = sqrt(num); // use the sqrt with type 'double' to store the square root
     if (num == sqr * sqr)// If the square result is equal to itself
     {
-        printf("The number has an integer root of %2.2f\n",sqr);
+        printf("The number has an integer root of %.0f.\n",sqr);
         // print the sqrt
     }
     else
