@@ -2,22 +2,23 @@
 #include <cstring>
 #include <cstdlib>
 using namespace std;
-
+void inverse(double a[][3], int n);// the prototype of inverse function
 int main()
 {
-    unsigned seed;
-    int Line;
-    seed = time(0);
-    srand(seed);
+    unsigned seed;// the seed to generate random number stream
+    int Line;// Line is the size of matrix
+    seed = time(0);// use the system time as a seed
+    srand(seed);// produce the random number
     cout << "Please input the dimension of the matrix:" << endl;
     cin >> Line;
-    double a[Line][Line];
-    cout << "Initializing the matrix..." << endl;
+    double a[Line][3];// the matrix (less order 3)
+    cout << "This is the original matrix:" << endl;
+
     for (int i = 0; i < Line; i++)
     {
         for (int j = 0; j < Line; j++)
         {
-            a[i][j] = rand() % 10;
+            a[i][j] = rand() % 10 + 1;
         }
     }
     for (int i = 0; i < Line; i++)
@@ -28,11 +29,144 @@ int main()
         }
         printf("\n");
     }
-
+    cout << endl;
+    cout << "This is the inverse matrix:" << endl;
+    inverse(a, Line);
+    for (int i = 0; i < Line; i++)
+    {
+        for (int j = 0; j < Line; j++)
+        {
+            printf("%5.4f ", a[i][j]);
+        }
+        printf("\n");
+    }
     return 0;
 }
 
-void inverse(int a[][],int n)// n is the order of the matrix
+void inverse(double a[][3], int n) // n is the order of the matrix
 {
+    if (n == 2)
+    {
+        double det = a[0][0] * a[1][1] - a[1][0] * a[0][1];
 
+        double a_1 = a[0][0];
+        a[0][0] = (a[1][1] / det);
+        a[1][1] = (a_1 / det);
+        a[1][0] = (-a[1][0] / det);
+        a[0][1] = (-a[0][1] / det);
+    }
+    else
+    {
+        if (n == 3)
+        {
+            double det;
+            det = a[0][0] * (a[1][1] * a[2][2] - a[1][2] * a[2][1]) -
+                  a[0][1] * (a[1][0] * a[2][2] - a[1][2] * a[2][0]) +
+                  a[2][2] * (a[1][0] * a[2][1] - a[1][1] * a[2][0]);
+            double I[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}; // Initialize the identity matrix
+            if (det == 0)
+            {
+                cout << "No inverse matrix!" << endl;
+            }
+
+            else
+            {
+                double temp_1 = a[0][0];    // use a temp variable to store a[0][0]
+                for (int i = 0; i < 3; i++) // Make the a[0][0] position is '1'
+                {
+                    a[0][i] = a[0][i] / temp_1;
+                    I[0][i] = I[0][i] / temp_1;
+                }
+
+                double temp_2 = a[1][0]; // temp_2 of a[1][0]
+                for (int i = 0; i < 3; i++)
+                {
+                    a[1][i] = a[1][i] - temp_2 * a[0][i];
+                    I[1][i] = I[1][i] - temp_2 * I[0][i];
+                }
+
+                double temp_3 = a[2][0];
+                for (int i = 0; i < 3; i++)
+                {
+                    a[2][i] = a[2][i] - temp_3 * a[0][i];
+                    I[2][i] = I[2][i] - temp_3 * I[0][i];
+                }
+
+                double m_1[3] = {a[1][0], a[1][1], a[1][2]};
+                double m_2[3] = {I[1][0], I[1][1], I[1][2]};
+                if (a[1][1] == 0)
+                {
+                    for (int j = 0; j < 3; j++)
+                    {
+                        a[1][j] = a[2][j];
+                        I[1][j] = I[2][j];
+                    }
+                    for (int i = 0; i < 3; i++)
+                    {
+                        a[2][i] = m_1[i];
+                        I[2][i] = m_2[i];
+                    }
+                }
+                double temp_4 = a[1][1];
+                for (int i = 0; i < 3; i++)
+                {
+                    a[1][i] = a[1][i] / temp_4;
+                    I[1][i] = I[1][i] / temp_4;
+                }
+
+                double temp_5 = a[2][1];
+                for (int i = 0; i < 3; i++)
+                {
+                    a[2][i] = a[2][i] - temp_5 * a[1][i];
+                    I[2][i] = I[2][i] - temp_5 * I[1][i];
+                }
+
+                double temp_6 = a[2][2];
+                for (int i = 0; i < 3; i++)
+                {
+                    a[2][i] /= temp_6;
+                    I[2][i] /= temp_6;
+                }
+
+                double temp_7 = a[1][2];
+                for (int i = 0; i < 3; i++)
+                {
+                    a[1][i] = a[1][i] - temp_7 * a[2][i];
+                    I[1][i] = I[1][i] - temp_7 * I[2][i];
+                }
+
+                double temp_8 = a[0][2];
+                for (int i = 0; i < 3; i++)
+                {
+                    a[0][i] = a[0][i] - temp_8 * a[2][i];
+                    I[0][i] = I[0][i] - temp_8 * I[2][i];
+                }
+
+                double temp_9 = a[0][1];
+                for (int i = 0; i < 3; i++)
+                {
+                    a[0][i] = a[0][i] - temp_9 * a[1][i];
+                    I[0][i] = I[0][i] - temp_9 * I[1][i];
+                }
+                for (int i = 0; i < 3; i++)
+                {
+                    for (int j = 0; j < 3; j++)
+                    {
+                        if (a[i][j] == 0)
+                        {
+                            a[i][j] = 0;
+                        }
+                    }
+                }
+                for (int i = 0; i < 3; i++)
+                {
+                    for (int j = 0; j < 3; j++)
+                    {
+                        a[i][j] = I[i][j];
+                    }
+                }
+            }
+            else cout << "Unavailable Input";
+        }
+    }
 }
