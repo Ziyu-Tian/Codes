@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string>
 #include <cctype>
+#include <cstdlib>
 using namespace std;
 int main()
 {
@@ -10,6 +11,9 @@ int main()
     string array[100];
     int chances = 7;
     int count = 0;
+    unsigned int seed;
+    seed = time(0);
+    srand(seed);
     ifstream dictionary;
     dictionary.open("dictionary.txt");
     if (!dictionary)
@@ -26,8 +30,8 @@ int main()
         }
         dictionary.close();
     }
-
-    string word = array[3];
+    int array_index = rand()%50+1;
+    string word = array[array_index];
     int size = word.length();
     char word_1[size];
     while (count != size && chances != 0)
@@ -40,7 +44,7 @@ int main()
             {
                 count++;
                 word_1[i] = guess;
-                cout << guess;
+                //cout << guess;
                 for (int j = i + 1; j < size; j++)
                 {
                     if (guess == word[j])
@@ -48,7 +52,7 @@ int main()
                         count++;
 
                         word_1[j] = guess;
-                        cout << guess;
+                        //cout << guess;
                     }
                     else
                     {
@@ -57,10 +61,9 @@ int main()
                             word_1[j] = '_';
                         }
 
-                        cout << "_";
+                        //cout << "_";
                     }
                 }
-                cout << endl;
                 for (int i = 0; i < size; i++)
                 {
                     cout << word_1[i];
@@ -74,11 +77,11 @@ int main()
                 {
                     word_1[i] = '_';
                 }
-                cout << "_";
+                //cout << "_";
                 if (i == size - 1)
                 {
                     chances--;
-                    cout<<"Wrong charater! Try another."<<endl;
+                    cout<<"Wrong answer! The left chance: "<<chances<<endl;
                 }
             }
         }
@@ -90,6 +93,7 @@ int main()
     else
     {
         cout << "You Lost!" << endl;
+        cout <<"The answer is: "<<word<<endl;
     }
 
     return 0;
