@@ -1,0 +1,96 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <cctype>
+using namespace std;
+int main()
+{
+    string s;   // s is the given answer
+    char guess; // the character you guess
+    string array[100];
+    int chances = 7;
+    int count = 0;
+    ifstream dictionary;
+    dictionary.open("dictionary.txt");
+    if (!dictionary)
+    {
+        cout << "Cannot open the file!" << endl;
+    }
+    else
+    {
+        int i = 0;
+        while (dictionary >> s)
+        {
+            array[i] = s;
+            i++;
+        }
+        dictionary.close();
+    }
+
+    string word = array[3];
+    int size = word.length();
+    char word_1[size];
+    while (count != size && chances != 0)
+    {
+        cout << "Please input the character you guess:" << endl;
+        cin >> guess;
+        for (int i = 0; i < size; i++)
+        {
+            if (guess == word[i])
+            {
+                count++;
+                word_1[i] = guess;
+                cout << guess;
+                for (int j = i + 1; j < size; j++)
+                {
+                    if (guess == word[j])
+                    {
+                        count++;
+
+                        word_1[j] = guess;
+                        cout << guess;
+                    }
+                    else
+                    {
+                        if (!isalpha(word_1[j]))
+                        {
+                            word_1[j] = '_';
+                        }
+
+                        cout << "_";
+                    }
+                }
+                cout << endl;
+                for (int i = 0; i < size; i++)
+                {
+                    cout << word_1[i];
+                }
+                cout << endl;
+                break;
+            }
+            else
+            {
+                if (!isalpha(word_1[i]))
+                {
+                    word_1[i] = '_';
+                }
+                cout << "_";
+                if (i == size - 1)
+                {
+                    chances--;
+                    cout<<"Wrong charater! Try another."<<endl;
+                }
+            }
+        }
+    }
+    if (count == size)
+    {
+        cout << "You Win!" << endl;
+    }
+    else
+    {
+        cout << "You Lost!" << endl;
+    }
+
+    return 0;
+}

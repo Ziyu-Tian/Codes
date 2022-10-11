@@ -5,6 +5,7 @@ int main()
 {
     string s;
     string s_1 = "";// a new string to store the sentence
+    cout<<"Please input the message:<<endl";
     getline(cin, s);
     int size = s.length();//get the length of the string 
     for (int i = 0; i<size; i++)
