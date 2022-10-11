@@ -15,7 +15,7 @@ int main()
     seed = time(0);
     srand(seed);
     ifstream dictionary;
-    dictionary.open("dictionary.txt");
+    dictionary.open("dictionary.txt");// the words in game are from the dictionary.txt
     if (!dictionary)
     {
         cout << "Cannot open the file!" << endl;
@@ -23,16 +23,16 @@ int main()
     else
     {
         int i = 0;
-        while (dictionary >> s)
+        while (dictionary >> s)// use >> to input the word
         {
             array[i] = s;
             i++;
         }
-        dictionary.close();
+        dictionary.close();// close the file
     }
-    int array_index = rand()%50+1;
-    string word = array[array_index];
-    int size = word.length();
+    int array_index = rand()%50+1; // the dictionary have 50 words
+    string word = array[array_index]; // randomly choose one word
+    int size = word.length();// use .length calculate the length
     char word_1[size];
     while (count != size && chances != 0)
     {
