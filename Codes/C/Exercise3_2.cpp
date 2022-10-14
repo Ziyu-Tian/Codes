@@ -1,9 +1,12 @@
 #include <iostream>
 #include <string>
+#include <fstream>
 using namespace std;
 int fib(int n);
 int main()
 {
+    ofstream write;
+    write.open("fish.txt");
     int n; // setting the number of lines
     cout << "Please input the number:" << endl;
     cin >> n;
@@ -12,11 +15,11 @@ int main()
         int num = fib(i);
         for (int j = 0; j < num; j++)
         {
-            cout<<"><((º> ";
+            write<<"><((º> ";
         }
-        cout<<endl;
+        write<<endl;
     }
-    
+    write.close();
     return 0;
 }
 
