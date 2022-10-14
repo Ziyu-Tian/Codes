@@ -1,37 +1,41 @@
-#include<iostream>
-#include<string>
+#include <iostream>
+#include <string>
 using namespace std;
 int fib(int n);
 int main()
 {
-    int n; //setting the number of lines
-    cout<<"Please input the number:"<<endl;
-    cin>>n;
-    for (int i = 0; i < n; i++)
+    int n; // setting the number of lines
+    cout << "Please input the number:" << endl;
+    cin >> n;
+    for (int i = 0; i < n+1; i++)
     {
-        for (int j = 0; j < n; j++)
+        int num = fib(i);
+        for (int j = 0; j < num; j++)
         {
-            /* code */
+            cout<<"><((º> ";
         }
-        
-        cout<<"><((º> "
+        cout<<endl;
     }
     
-
+    return 0;
 }
-int fibFish(int n)
+
+int fib(int n)
 {
-    if (n ==1)
+    if (n == 1)
     {
-        cout<<"><((º> ";;
+        return 1;
     }
-    else if (n==2)
+    else if (n == 2)
     {
-        cout<<"><((º> "<<endl;
+        return 1;
+    }
+    else if (n == 0)
+    {
+        return 0;
     }
     else
     {
-        return Fib(n-1)+Fib(n-2);
+        return fib(n - 1) + fib(n - 2);
     }
-       
 }
