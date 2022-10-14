@@ -148,6 +148,8 @@ dkms.conf
 *.vcxproj
 # TXT
 *.txt 
+# CSV
+.csv
 
 
 
