@@ -105,7 +105,7 @@ Mkfile.old
 dkms.conf
 
 # C++
-ouput/*
+output/*
 # Prerequisites
 *.d
 
