@@ -149,7 +149,7 @@ output/*
 # TXT
 *.txt 
 # CSV
-.csv
+*.csv
 
 
 
