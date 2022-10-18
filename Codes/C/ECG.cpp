@@ -2,6 +2,7 @@
 #include <string>
 #include <fstream>
 #include<cstring>
+#include<sstream>
 using namespace std;
 int main()
 {
@@ -112,12 +113,19 @@ int main()
     for (int i = 0; i < 11; i++)
     {
         int change = Range[i];
-        Range[i] = change/205;
+        if (Range[i]>205)
+        {
+            Range[i] = (change/205);
+        }
+        else
+        {
+            Range[i] = 0;
+        }
     }
     for (int i = 0; i < 11; i++)
     {
         cout<<"B"<<i<<" "<<"|";
-        for (int j = 0; j < Range[i]; j++)
+        for (int j = 0; j <Range[i]; j++)
         {
             cout<<"-";
         }
@@ -127,6 +135,7 @@ int main()
     {
         cout<<Range[i]<<endl;
     }
+    
     
     return 0;
 }
