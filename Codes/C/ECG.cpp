@@ -8,12 +8,19 @@ int main()
 {
     ifstream ecg;
     ecg.open("data.csv");
-    int Range[11];
-    memset(Range,0,11);
+    unsigned int Range[50];
+    /*
+    for (size_t i = 0; i < 11; i++)
+    {
+        Range[i] = 0;
+    }
+    */
+   fill(Range,Range+10,0);
+    
     // the array need to be set '0'
-    int a; // a is the data
+    unsigned int a; // a is the data
     int sign;
-    int temp;
+    unsigned int temp;
     while (!ecg.eof())
     {
         ecg >> a;
@@ -30,7 +37,7 @@ int main()
         if (a >= 501 && a <= 600)
             sign = 5;
         if (a >= 601 && a <= 700)
-            sign = 6;
+           sign = 6;
         if (a >= 701 && a <= 800)
             sign = 7;
         if (a >= 801 && a <= 900)
@@ -112,30 +119,33 @@ int main()
     ecg.close();
     for (int i = 0; i < 11; i++)
     {
-        int change = Range[i];
         if (Range[i]>205)
         {
-            Range[i] = (change/205);
+            Range[i] = (Range[i]/205);
         }
         else
         {
             Range[i] = 0;
         }
     }
+
     for (int i = 0; i < 11; i++)
     {
         cout<<"B"<<i<<" "<<"|";
-        for (int j = 0; j <Range[i]; j++)
+        for (unsigned int j = 0; j <Range[i]; j++)
         {
             cout<<"-";
         }
         cout<<endl;
     }
-    for (int i = 0; i < 11; i++)
-    {
-        cout<<Range[i]<<endl;
-    }
+/*
+for (size_t i = 0; i < 11; i++)
+{
+    cout<<Range[i]<<endl;
+}
+*/
     
+
     
     return 0;
 }
