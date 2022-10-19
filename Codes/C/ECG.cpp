@@ -138,14 +138,9 @@ int main()
         }
         cout<<endl;
     }
-/*
-for (size_t i = 0; i < 11; i++)
-{
-    cout<<Range[i]<<endl;
-}
-*/
-    
 
     
-    return 0;
+    
+   return 0;
 }
+
