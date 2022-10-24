@@ -5,16 +5,14 @@
 #include <string>
 #include <ctime>
 #include <unistd.h>
-
 using namespace std;
 
 void clearScreen();
 
 int main()
 {
-	ifstream file("/proc/stat");
+	ifstream file("/proc/uptime");
 	string line;
-	int num = 0;
 
 	if (!file.good())
 	{
@@ -23,28 +21,26 @@ int main()
 	}
 
 	clearScreen();
-	//while (true)
-	//{
+	while (true)
+	{
 		while (getline(file, line))
 		{
 			stringstream linestream(line);
 			string token;
-			getline(linestream, token, ' ');
+            double upTime;
+            double idleTime;
 
-			if (token[0] == 'c' && token[1] == 'p' && (token != "cpu" || num == 0))
-			{
-
-				num++;
-			}
+			//getline(linestream, token, ' ');
+            linestream>>upTime>>idleTime;
+            cout<<upTime<<"\t"<<idleTime<<endl;
 		}
 
-		 //usleep(500000);
-		 //clearScreen();
-	//}
+		 usleep(50000);
+		 clearScreen();
+	}
 
 	file.close();
 
-	cout<<num<<endl;
 	return 0;
 }
 

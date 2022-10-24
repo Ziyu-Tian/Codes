@@ -1,9 +1,10 @@
 #include <iostream>
 #include <fstream>
-#include <string>
 #include <sstream>
-#include <ctime>
 #include <cstdlib>
+#include <string>
+#include <ctime>
+#include <unistd.h>
 using namespace std;
 int CoreNum(void);
 int main()
