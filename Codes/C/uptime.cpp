@@ -32,9 +32,12 @@ int main()
 			//cout<<line<<endl;
 			long double idleTime=0;
 
-			//getline(linestream, token, ' ');
 			linestream >> upTime >>idleTime;
-			//cout<<token<<endl;
+			//cout<<"---------------------------------------------------------------------------------------------"<<endl;
+			
+			
+			
+			
 			cout << upTime <<"\t"<<idleTime<<endl;	
 		}
 		usleep(500000);
