@@ -21,26 +21,35 @@ int main()
 	}
 
 	clearScreen();
-	while (true)
+	while(true)
 	{
+
 		while (getline(file, line))
 		{
 			stringstream linestream(line);
 			string token;
-            double upTime;
-            double idleTime;
+			long double upTime=0;
+			//cout<<line<<endl;
+			long double idleTime=0;
 
 			//getline(linestream, token, ' ');
-            linestream>>upTime>>idleTime;
-            cout<<upTime<<"\t"<<idleTime<<endl;
+			linestream >> upTime >>idleTime;
+			//cout<<token<<endl;
+			cout << upTime <<"\t"<<idleTime<<endl;	
 		}
-
-		 usleep(50000);
-		 clearScreen();
+		usleep(500000);
+        clearScreen();
+        file.close();
+		
+        file.open("/proc/uptime");
+        if (!file.good())
+        {
+            cerr << "Could not open file.... exitting..." << endl;
+            exit(EXIT_FAILURE);
+        }
+		
 	}
-
 	file.close();
-
 	return 0;
 }
 
