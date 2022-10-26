@@ -15,10 +15,6 @@ int main()
     string word;
     int i = 0;
     int j = 0;
-    long long unsigned int user = 0;
-    long long unsigned int nice = 0;
-    long long unsigned int system = 0;
-    long long unsigned int idle = 0;
     long long unsigned int data[20][20];
     for (int m = 0; m < 20; m++)
     {
@@ -41,6 +37,10 @@ int main()
         stringstream linestream(line);
         string token;
         getline(linestream, token, ' ');
+        long long unsigned int user = 0;
+        long long unsigned int nice = 0;
+        long long unsigned int system = 0;
+        long long unsigned int idle = 0;
 
         if (token[0] == 'c' && token[1] == 'p' && !(token == "cpu"))
         {
@@ -50,7 +50,9 @@ int main()
             data[i][1] = nice;
             data[i][2] = system;
             data[i][3] = idle;
+            ++i;
         }
+        
     }
     file.close();
     // while (true)
