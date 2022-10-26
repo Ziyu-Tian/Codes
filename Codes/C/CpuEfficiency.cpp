@@ -26,9 +26,11 @@ int main()
     }
 
     clearScreen();
+    cout<<"CPU\t"<<"busy\t        "<<"idle\t        "<<"system\t        "<<"nice\n";
     while (true)
     {
-        int i = 0;
+        int i = 0; 
+
         while (getline(file, line))
         {
             stringstream linestream(line);
@@ -41,7 +43,7 @@ int main()
             long long unsigned int iowait = 0;
             long long unsigned int irq = 0;
             long long unsigned int softirq = 0;
-
+    
             if (token[0] == 'c' && token[1] == 'p' && !(token == "cpu"))
             {
                 if (i > 3)
@@ -56,7 +58,9 @@ int main()
                     percentage[i][1] = (float)idle * 100 / sum;
                     percentage[i][2] = (float)system * 100 / sum;
                     percentage[i][3] = (float)nice * 100 / sum;
-                    cout << fixed << setprecision(6)
+                   
+                    cout <<"cpu"<<i<<"\t"
+                         << fixed << setprecision(6)
                          << percentage[i][0] << "%\t"
                          << percentage[i][1] << "%\t"
                          << percentage[i][2] << "%\t"
