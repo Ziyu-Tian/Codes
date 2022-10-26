@@ -23,28 +23,23 @@ int main()
 	}
 
 	clearScreen();
-	//while (true)
-	//{
-		while (getline(file, line))
+	while (getline(file, line))
+	{
+		stringstream linestream(line);
+		string token;
+		getline(linestream, token, ' ');
+
+		if (token[0] == 'c' && token[1] == 'p' && (token != "cpu" || num == 0))
 		{
-			stringstream linestream(line);
-			string token;
-			getline(linestream, token, ' ');
 
-			if (token[0] == 'c' && token[1] == 'p' && (token != "cpu" || num == 0))
-			{
-
-				num++;
-			}
+			num++;
 		}
-
-		 //usleep(500000);
-		 //clearScreen();
-	//}
+	}
 
 	file.close();
-
-	cout<<num<<endl;
+	cout << "------------------------------------------------------------------------"
+		 << endl;
+	cout <<"Total CPU Cores: "<< num << endl;
 	return 0;
 }
 
