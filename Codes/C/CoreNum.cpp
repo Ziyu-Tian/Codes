@@ -10,7 +10,15 @@ using namespace std;
 
 void clearScreen();
 
+int CoreNum();
+
 int main()
+{
+	cout<<CoreNum()<<endl;
+	return 0;
+}
+
+int CoreNum()
 {
 	ifstream file("/proc/stat");
 	string line;
@@ -37,10 +45,13 @@ int main()
 	}
 
 	file.close();
+	--num;
+	/*
 	cout << "------------------------------------------------------------------------"
 		 << endl;
 	cout <<"Total CPU Cores: "<< num << endl;
-	return 0;
+	*/
+	return num;
 }
 
 void clearScreen()
