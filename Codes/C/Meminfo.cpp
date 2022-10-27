@@ -14,7 +14,8 @@ int main()
 {
     ifstream file("/proc/meminfo");
     string line;
-
+    cout << "------------------------------------------------------------------------"
+         << endl;
     if (!file.good())
     {
         cerr << "Could not open file.... exitting..." << endl;
@@ -54,8 +55,7 @@ int main()
                 Cached = Cached / 1024;
             }
         }
-        cout << "------------------------------------------------------------------------"
-             << endl;
+
         cout << "MEMORY\t"
              << "Total: " << fixed << setprecision(2)
              << Total << "MB" << endl
@@ -65,8 +65,6 @@ int main()
              << "Cached: " << Cached << "MB" << endl
              << "      \t"
              << "Buffers: " << Buffers << "MB" << endl;
-        cout << "------------------------------------------------------------------------"
-		 << endl;
 
         usleep(500000);
         clearScreen();
