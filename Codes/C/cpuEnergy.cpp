@@ -12,7 +12,7 @@ void clearScreen();
 
 int main()
 {
-    ifstream file("/proc/meminfo");
+    ifstream file("/proc/uptime");
     string line;
     if (!file.good())
     {
@@ -68,7 +68,7 @@ int main()
         clearScreen();
         file.close();
 
-        file.open("/proc/meminfo");
+        file.open("/proc/uptime");
         if (!file.good())
         {
             cerr << "Could not open file.... exitting..." << endl;
