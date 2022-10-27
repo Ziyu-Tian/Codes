@@ -46,7 +46,7 @@ int main()
     
             if (token[0] == 'c' && token[1] == 'p' && !(token == "cpu"))
             {
-                if (i > 3)
+                if (i > 3)// The number of the core is '4'
                 {
                     break;
                 }
