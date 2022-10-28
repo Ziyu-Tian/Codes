@@ -27,11 +27,7 @@ void cpuPrint()
     }
 
     clearScreen();
-    cout << "CPU\t"
-         << "busy\t"
-         << "idle\t"
-         << "system\t"
-         << "nice\n";
+
     while (true)
     {
         int i = 0;

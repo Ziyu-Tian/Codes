@@ -6,14 +6,17 @@
 #include <ctime>
 #include <unistd.h>
 #include <iomanip>
+#include "CoreNum.hpp"
 using namespace std;
 
-void clearScreen();
+void energyPrint(void);
 
-int main()
+
+void energyPrint()
 {
 	ifstream file("/proc/uptime");
 	string line;
+	int Cores = CoreNum();
 
 	if (!file.good())
 	{
@@ -39,11 +42,15 @@ int main()
 
 			linestream >> upTime >> idleTime;
 
-			idleTime = idleTime / 4;
+			idleTime = idleTime / Cores;
 
 			IdlePower = idleTime * 22 / 1000000;
 			ActivePower = (upTime - idleTime) * 40 / 1000000;
-			cout << fixed << setprecision(2) << IdlePower << " MJoules" << endl
+			cout << "ENERGY\t"
+				 << "In Activate State: "
+				 << fixed << setprecision(2) << IdlePower << " MJoules" << endl
+				 << "      \t"
+				 << "In idle State: "
 				 << ActivePower << " MJoules" << endl;
 		}
 		usleep(500000);
@@ -58,10 +65,4 @@ int main()
 		}
 	}
 	file.close();
-	return 0;
-}
-
-void clearScreen()
-{
-	cout << "\033[2J\033[1;1H";
 }

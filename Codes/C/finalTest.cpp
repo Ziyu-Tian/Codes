@@ -3,9 +3,12 @@
 #include "CpuEfficiency.hpp"
 #include "Meminfo.hpp"
 #include "uptime.hpp"
+#include "cpuEnergy.hpp"
 using namespace std;
 int main()
 {
-   timePrint();
+    printCore();
+    cpuPrint();
+
     return 0;
 }
