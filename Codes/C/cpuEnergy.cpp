@@ -5,81 +5,76 @@
 #include <string>
 #include <ctime>
 #include <unistd.h>
-#include <string.h>
-#include <iomanip>
 using namespace std;
+
+void dataPrint(long double uptime, long double idletime);
+
 void clearScreen();
 
 int main()
 {
-    ifstream file("/proc/uptime");
-    string line;
-    if (!file.good())
-    {
-        cerr << "Could not open file.... exitting..." << endl;
-        exit(EXIT_FAILURE);
-    }
-    clearScreen();
-    while (true)
-    {
-        long double Total = 0;
-        long double Free = 0;
-        long double Buffers = 0;
-        long double Cached = 0;
-        while (getline(file, line))
-        {
-            stringstream linestream(line);
-            string token;
-            getline(linestream, token, ':');
+	ifstream file("/proc/uptime");
+	string line;
 
-            if (token == "MemTotal")
-            {
-                linestream >> Total;
-                Total = Total / 1024;
-            }
-            if (token == "MemFree")
-            {
-                linestream >> Free;
-                Free = Free / 1024;
-            }
-            if (token == "Buffers")
-            {
-                linestream >> Buffers;
-                Buffers = Buffers / 1024;
-            }
-            if (token == "Cached")
-            {
-                linestream >> Cached;
-                Cached = Cached / 1024;
-            }
-        }
+	if (!file.good())
+	{
+		cerr << "Could not open file.... exitting..." << endl;
+		exit(EXIT_FAILURE);
+	}
 
-        cout << "MEMORY\t"
-             << "Total: " << fixed << setprecision(2)
-             << Total << "MB" << endl
-             << "      \t"
-             << "Free: " << Free << "MB" << endl
-             << "      \t"
-             << "Cached: " << Cached << "MB" << endl
-             << "      \t"
-             << "Buffers: " << Buffers << "MB" << endl;
+	clearScreen();
+	while (true)
+	{
 
-        usleep(500000);
-        clearScreen();
-        file.close();
+		while (getline(file, line))
+		{
+			stringstream linestream(line);
+			string token;
+			long double upTime = 0;
 
-        file.open("/proc/uptime");
-        if (!file.good())
-        {
-            cerr << "Could not open file.... exitting..." << endl;
-            exit(EXIT_FAILURE);
-        }
-    }
-    file.close();
-    return 0;
+			long double idleTime = 0;
+
+			linestream >> upTime >> idleTime;
+
+
+			dataPrint(upTime,idleTime);
+		}
+		usleep(500000);
+		clearScreen();
+		file.close();
+
+		file.open("/proc/uptime");
+		if (!file.good())
+		{
+			cerr << "Could not open file.... exitting..." << endl;
+			exit(EXIT_FAILURE);
+		}
+	}
+	file.close();
+	return 0;
 }
 
 void clearScreen()
 {
-    cout << "\033[2J\033[1;1H";
+	cout << "\033[2J\033[1;1H";
+}
+void dataPrint(long double uptime, long double idletime)
+{
+
+	int hour, minute, second, total = 0;
+	int hour_1, minute_1, second_1, total_1 = 0;
+	stringstream s;
+	stringstream s_1;
+	s << uptime;
+	s >> total;
+	s_1<< idletime;
+	s_1>> total_1;
+	cout << "------------------------------------------------------------------------"
+		 << endl;
+	cout << "SYSTEM"
+		 << "\t";
+	printf("UP for %d hours %d minutes and %d seconds\n", hour, minute, second);
+	printf("      \t");
+	printf("IDLE for %d hours %d minutes and %d seconds\n", hour_1, minute_1, second_1);
+	//cout<<idletime<<endl;
 }
