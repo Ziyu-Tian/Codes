@@ -39,7 +39,10 @@ int main()
 
 			linestream >> upTime >> idleTime;
 
-			IdlePower = idleTime
+			IdlePower = idleTime * 22 / 1000000;
+			ActivePower = (upTime-idleTime)*40 / 1000000;
+			cout<< IdlePower <<"MJoules"<<endl;
+			cout<< ActivePower << "MJoules"<<endl;
 			
 		}
 		usleep(500000);

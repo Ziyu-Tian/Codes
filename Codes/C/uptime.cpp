@@ -35,9 +35,9 @@ int main()
 			long double idleTime = 0;
 
 			linestream >> upTime >> idleTime;
-
-			//cout << upTime << "\t" << idleTime << endl;
-			dataPrint(upTime,idleTime);
+			idleTime = idleTime / 4;
+			// cout << upTime << "\t" << idleTime << endl;
+			dataPrint(upTime, idleTime);
 		}
 		usleep(500000);
 		clearScreen();
@@ -71,8 +71,8 @@ void dataPrint(long double uptime, long double idletime)
 	minute = total / 60;
 	hour = minute / 60;
 	minute = minute % 60;
-	s_1<< idletime;
-	s_1>> total_1;
+	s_1 << idletime;
+	s_1 >> total_1;
 	second_1 = total_1 % 60;
 	minute_1 = total_1 / 60;
 	hour_1 = minute_1 / 60;
@@ -84,5 +84,5 @@ void dataPrint(long double uptime, long double idletime)
 	printf("UP for %d hours %d minutes and %d seconds\n", hour, minute, second);
 	printf("      \t");
 	printf("IDLE for %d hours %d minutes and %d seconds\n", hour_1, minute_1, second_1);
-	//cout<<idletime<<endl;
+	// cout<<idletime<<endl;
 }
