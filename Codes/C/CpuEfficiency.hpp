@@ -6,18 +6,18 @@
 #include <ctime>
 #include <unistd.h>
 #include <string.h>
-#include <iomanip>
+#include <iomanip> // library used to set precision
 using namespace std;
 void clearScreen();
-
-int main()
+void cpuPrint(void);
+void cpuPrint()
 {
     ifstream file("/proc/stat");
     string line;
     string word;
     long long unsigned int sum = 0;
-    float percentage[20][20];
-    memset(percentage, 0, sizeof(percentage));
+    float percentage[200][200];                // two-dimension array store the table of cpu
+    memset(percentage, 0, sizeof(percentage)); // initialize array with 0
 
     if (!file.good())
     {
@@ -26,11 +26,19 @@ int main()
     }
 
     clearScreen();
-    cout<<"CPU\t"<<"busy\t        "<<"idle\t        "<<"system\t        "<<"nice\n";
+    cout << "CPU\t"
+         << "busy\t"
+         << "idle\t"
+         << "system\t"
+         << "nice\n";
     while (true)
     {
-        int i = 0; 
-
+        int i = 0;
+        cout << "CPU\t"
+             << "busy\t"
+             << "idle\t"
+             << "system\t"
+             << "nice\n";
         while (getline(file, line))
         {
             stringstream linestream(line);
@@ -43,10 +51,9 @@ int main()
             long long unsigned int iowait = 0;
             long long unsigned int irq = 0;
             long long unsigned int softirq = 0;
-    
             if (token[0] == 'c' && token[1] == 'p' && !(token == "cpu"))
             {
-                if (i > 3)// The number of the core is '4'
+                if (i > 3) // The number of the core is '4'
                 {
                     break;
                 }
@@ -58,9 +65,9 @@ int main()
                     percentage[i][1] = (float)idle * 100 / sum;
                     percentage[i][2] = (float)system * 100 / sum;
                     percentage[i][3] = (float)nice * 100 / sum;
-                   
-                    cout <<"cpu"<<i<<"\t"
-                         << fixed << setprecision(6)
+
+                    cout << "cpu" << i << "\t"
+                         << fixed << setprecision(2)
                          << percentage[i][0] << "%\t"
                          << percentage[i][1] << "%\t"
                          << percentage[i][2] << "%\t"
@@ -81,7 +88,6 @@ int main()
         }
     }
     file.close();
-    return 0;
 }
 
 void clearScreen()

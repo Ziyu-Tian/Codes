@@ -1,8 +1,9 @@
 #include <iostream>
-#include "CoreNum.hpp"
+//#include "CoreNum.hpp"
+#include "CpuEfficiency.hpp"
 using namespace std;
 int main()
 {
-    cout << CoreNum()<<endl;
+   cpuPrint();
     return 0;
 }
