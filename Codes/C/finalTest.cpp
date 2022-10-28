@@ -1,9 +1,10 @@
 #include <iostream>
 #include "CoreNum.hpp"
 #include "CpuEfficiency.hpp"
+#include "Meminfo.hpp"
 using namespace std;
 int main()
 {
-   cpuPrint();
+   memPrint();
     return 0;
 }

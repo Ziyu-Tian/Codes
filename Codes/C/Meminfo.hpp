@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -8,9 +9,10 @@
 #include <string.h>
 #include <iomanip>
 using namespace std;
-void clearScreen();
 
-int main()
+void memPrint(void);
+
+void memPrint()
 {
     ifstream file("/proc/meminfo");
     string line;
@@ -76,10 +78,4 @@ int main()
         }
     }
     file.close();
-    return 0;
-}
-
-void clearScreen()
-{
-    cout << "\033[2J\033[1;1H";
 }
