@@ -7,8 +7,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <iomanip> // library used to set precision
+#include "CoreNum.hpp"
 using namespace std;
-void clearScreen();
 void cpuPrint(void);
 void cpuPrint()
 {
@@ -18,7 +18,7 @@ void cpuPrint()
     long long unsigned int sum = 0;
     float percentage[200][200];                // two-dimension array store the table of cpu
     memset(percentage, 0, sizeof(percentage)); // initialize array with 0
-
+    int Cores = CoreNum();
     if (!file.good())
     {
         cerr << "Could not open file.... exitting..." << endl;
@@ -53,7 +53,7 @@ void cpuPrint()
             long long unsigned int softirq = 0;
             if (token[0] == 'c' && token[1] == 'p' && !(token == "cpu"))
             {
-                if (i > 3) // The number of the core is '4'
+                if (i > (Cores-1)) // The number of the core is '4', but the index is from '0'
                 {
                     break;
                 }
@@ -90,7 +90,3 @@ void cpuPrint()
     file.close();
 }
 
-void clearScreen()
-{
-    cout << "\033[2J\033[1;1H";
-}

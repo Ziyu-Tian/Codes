@@ -5,8 +5,8 @@
 #include <string>
 #include <ctime>
 #include <unistd.h>
+#include <iomanip>
 using namespace std;
-
 
 void clearScreen();
 
@@ -39,11 +39,12 @@ int main()
 
 			linestream >> upTime >> idleTime;
 
+			idleTime = idleTime / 4;
+
 			IdlePower = idleTime * 22 / 1000000;
-			ActivePower = (upTime-idleTime)*40 / 1000000;
-			cout<< IdlePower <<"MJoules"<<endl;
-			cout<< ActivePower << "MJoules"<<endl;
-			
+			ActivePower = (upTime - idleTime) * 40 / 1000000;
+			cout << fixed << setprecision(2) << IdlePower << " MJoules" << endl
+				 << ActivePower << " MJoules" << endl;
 		}
 		usleep(500000);
 		clearScreen();
@@ -64,4 +65,3 @@ void clearScreen()
 {
 	cout << "\033[2J\033[1;1H";
 }
-
