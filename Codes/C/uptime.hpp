@@ -5,16 +5,20 @@
 #include <string>
 #include <ctime>
 #include <unistd.h>
+#include "CoreNum.hpp"
 using namespace std;
 
 void dataPrint(long double uptime, long double idletime);
 
-void clearScreen();
 
-int main()
+void timePrint(void);
+
+
+void timePrint()
 {
 	ifstream file("/proc/uptime");
 	string line;
+	int Cores = CoreNum();
 
 	if (!file.good())
 	{
@@ -35,7 +39,7 @@ int main()
 			long double idleTime = 0;
 
 			linestream >> upTime >> idleTime;
-			idleTime = idleTime / 4;
+			idleTime = idleTime / Cores;
 			// cout << upTime << "\t" << idleTime << endl;
 			dataPrint(upTime, idleTime);
 		}
@@ -51,13 +55,8 @@ int main()
 		}
 	}
 	file.close();
-	return 0;
 }
 
-void clearScreen()
-{
-	cout << "\033[2J\033[1;1H";
-}
 void dataPrint(long double uptime, long double idletime)
 {
 

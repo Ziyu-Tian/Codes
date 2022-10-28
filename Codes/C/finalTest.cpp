@@ -2,9 +2,10 @@
 #include "CoreNum.hpp"
 #include "CpuEfficiency.hpp"
 #include "Meminfo.hpp"
+#include "uptime.hpp"
 using namespace std;
 int main()
 {
-   memPrint();
+   timePrint();
     return 0;
 }
