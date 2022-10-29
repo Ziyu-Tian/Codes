@@ -13,8 +13,6 @@ void clearScreen();
 
 int CoreNum();
 
-void printCore(void);
-
 int CoreNum()
 {
 	ifstream file("/proc/stat"); // input the "/proc/stat" file
@@ -29,7 +27,7 @@ int CoreNum()
 		exit(EXIT_FAILURE);
 	}
 	// clean the error message
-	clearScreen();
+	//clearScreen();
 
 	// continue input line until the end of the file
 	while (getline(file, line))
@@ -59,12 +57,4 @@ void clearScreen()
 // The function of clearScreen() is cleaning the current linux terminal
 // and move the cursor to (1,1)
 
-void printCore()
-{
-	int core = CoreNum();
-	cout << "-----------------------------------------------------------------------"
-		 << endl
-		 << "Total CPU Cores: " << core << endl
-		 << "-----------------------------------------------------------------------"
-		 << endl;
-}
+
