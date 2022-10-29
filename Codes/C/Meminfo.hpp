@@ -10,7 +10,7 @@
 #include <iomanip>
 using namespace std;
 
-void memPrint();
+void memPrint(ifstream&mem);
 void memClose(ifstream &mem);
 void memReopen(ifstream &mem);
 
@@ -23,7 +23,7 @@ void memPrint()
         cerr << "Could not open file.... exitting..." << endl;
         exit(EXIT_FAILURE);
     }
-    clearScreen();
+    //clearScreen();
     // while (true)
     //{
     long double Total = 0;

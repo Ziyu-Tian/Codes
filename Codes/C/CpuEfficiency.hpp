@@ -13,9 +13,9 @@ using namespace std;
 void cpuPrint(ifstream &stat);
 void statClose(ifstream &stat);
 void statReopen(ifstream &stat);
-void cpuPrint(ifstream &stat)
+void cpuPrint()
 {
-    // ifstream stat("/proc/stat");
+    ifstream stat("/proc/stat");
     string line;
     string word;
     long long unsigned int sum = 0;
@@ -28,7 +28,7 @@ void cpuPrint(ifstream &stat)
         exit(EXIT_FAILURE);
     }
 
-    clearScreen();
+    //clearScreen();
 
     // while (true)
     // {
