@@ -24,9 +24,9 @@ void energyPrint()
 		exit(EXIT_FAILURE);
 	}
 
-	clearScreen();
-	while (true)
-	{
+	//clearScreen();
+	//while (true)
+	//{
 
 		while (getline(file, line))
 		{
@@ -53,10 +53,10 @@ void energyPrint()
 				 << "In idle State: "
 				 << ActivePower << " MJoules" << endl;
 		}
-		usleep(500000);
-		clearScreen();
+		//usleep(500000);
+		//clearScreen();
 		file.close();
-
+/*
 		file.open("/proc/uptime");
 		if (!file.good())
 		{
@@ -64,5 +64,6 @@ void energyPrint()
 			exit(EXIT_FAILURE);
 		}
 	}
-	file.close();
+*/
+	//file.close();
 }

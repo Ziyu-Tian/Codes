@@ -10,9 +10,7 @@ using namespace std;
 
 void dataPrint(long double uptime, long double idletime);
 
-
 void timePrint(void);
-
 
 void timePrint()
 {
@@ -27,35 +25,36 @@ void timePrint()
 	}
 
 	clearScreen();
-	while (true)
+	// while (true)
+	//{
+
+	while (getline(file, line))
 	{
+		stringstream linestream(line);
+		string token;
+		long double upTime = 0;
+		// cout<<line<<endl;
+		long double idleTime = 0;
 
-		while (getline(file, line))
-		{
-			stringstream linestream(line);
-			string token;
-			long double upTime = 0;
-			// cout<<line<<endl;
-			long double idleTime = 0;
-
-			linestream >> upTime >> idleTime;
-			idleTime = idleTime / Cores;
-			// cout << upTime << "\t" << idleTime << endl;
-			dataPrint(upTime, idleTime);
-		}
-		usleep(500000);
-		clearScreen();
-		file.close();
-
-		file.open("/proc/uptime");
-		if (!file.good())
-		{
-			cerr << "Could not open file.... exitting..." << endl;
-			exit(EXIT_FAILURE);
-		}
+		linestream >> upTime >> idleTime;
+		idleTime = idleTime / Cores;
+		// cout << upTime << "\t" << idleTime << endl;
+		dataPrint(upTime, idleTime);
 	}
+	// usleep(500000);
+	// clearScreen();
 	file.close();
+	/*
+	file.open("/proc/uptime");
+	if (!file.good())
+	{
+		cerr << "Could not open file.... exitting..." << endl;
+		exit(EXIT_FAILURE);
+	}
+	*/
 }
+// file.close();
+//}
 
 void dataPrint(long double uptime, long double idletime)
 {
