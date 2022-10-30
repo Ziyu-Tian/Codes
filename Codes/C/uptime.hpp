@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -24,7 +25,7 @@ void timePrint()
 		exit(EXIT_FAILURE);
 	}
 
-	clearScreen();
+	//clearScreen();
 	// while (true)
 	//{
 
@@ -75,12 +76,13 @@ void dataPrint(long double uptime, long double idletime)
 	minute_1 = total_1 / 60;
 	hour_1 = minute_1 / 60;
 	minute_1 = minute_1 % 60;
-	cout << "------------------------------------------------------------------------"
-		 << endl;
+		
 	cout << "SYSTEM"
 		 << "\t";
 	printf("UP for %d hours %d minutes and %d seconds\n", hour, minute, second);
 	printf("      \t");
 	printf("IDLE for %d hours %d minutes and %d seconds\n", hour_1, minute_1, second_1);
+	cout << "------------------------------------------------------------------------"
+   << endl;
 	// cout<<idletime<<endl;
 }

@@ -1,6 +1,5 @@
 #pragma once
 #include <iostream>
-#include <bits/stdc++.h>>
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
@@ -44,7 +43,7 @@ void cpuPrint()
          << "busy\t"
          << "idle\t"
          << "system\t"
-         << "nice\n";
+         << "nice"<<endl;
     while (getline(stat, line))
     {
         stringstream linestream(line);

@@ -68,9 +68,8 @@ void memPrint()
          << "      \t"
          << "Cached: " << Cached << "MB" << endl
          << "      \t"
-         << "Buffers: " << Buffers << "MB" << endl
-         << "-----------------------------------------------------------------------"
-         << endl;
+         << "Buffers: " << Buffers << "MB" << endl;
+
     /*
             usleep(500000);
             clearScreen();
