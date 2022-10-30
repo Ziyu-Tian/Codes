@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include <bits/stdc++.h>>
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
@@ -38,7 +39,7 @@ void cpuPrint()
     cout << endl;
     cout << "Total CPU Cores: " << Cores << endl
          << "-----------------------------------------------------------------------"
-         << endl
+         << endl << setw(5)
          << "CPU\t"
          << "busy\t"
          << "idle\t"
