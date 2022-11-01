@@ -101,10 +101,10 @@ void energyPrint() {
     IdlePower = idleTime * 22 / 1000000;
     ActivePower = (upTime - idleTime) * 40 / 1000000;
     cout << "ENERGY\t"
-         << "In Activate State: " << fixed << setprecision(2) << IdlePower
+         << "In Activate State: " << fixed << setprecision(2) << ActivePower
          << " MJoules" << endl
          << "      \t"
-         << "In idle State: " << ActivePower << " MJoules" << endl;
+         << "In idle State: " << idlePower << " MJoules" << endl;
   }
   // usleep(500000);
   // clearScreen();
