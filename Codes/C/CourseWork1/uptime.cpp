@@ -10,24 +10,20 @@ void timePrint() {
     exit(EXIT_FAILURE);
   }
 
-  // clearScreen();
-  // while (true)
-  //{
 
   while (getline(file, line)) {
     stringstream linestream(line);
     string token;
     long double upTime = 0;
-    // cout<<line<<endl;
+ 
     long double idleTime = 0;
 
     linestream >> upTime >> idleTime;
     idleTime = idleTime / Cores;
-    // cout << upTime << "\t" << idleTime << endl;
+   
     dataPrint(upTime, idleTime);
   }
-  // usleep(500000);
-  // clearScreen();
+ 
   file.close();
 
   file.open("/proc/uptime");
