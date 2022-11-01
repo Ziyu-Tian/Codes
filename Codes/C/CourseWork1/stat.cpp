@@ -87,9 +87,9 @@ void cpuPrint()
         long long unsigned int nice = 0;
         long long unsigned int system = 0;
         long long unsigned int idle = 0;
-        long long unsigned int iowait = 0;
-        long long unsigned int irq = 0;
-        long long unsigned int softirq = 0;
+        //long long unsigned int iowait = 0;
+        //long long unsigned int irq = 0;
+        //long long unsigned int softirq = 0;
         if (token[0] == 'c' && token[1] == 'p' && !(token == "cpu"))
         {
             if (i > (Cores - 1)) // The number of the core is '4', but the index is from '0'
@@ -98,8 +98,8 @@ void cpuPrint()
             }
             else
             {
-                linestream >> user >> nice >> system >> idle >> iowait >> irq >> softirq;
-                sum = user + nice + system + idle + iowait + irq + softirq;
+                linestream >> user >> nice >> system >> idle;
+                sum = user + nice + system + idle;
                 percentage[i][0] = (float)user * 100 / sum;
                 percentage[i][1] = (float)idle * 100 / sum;
                 percentage[i][2] = (float)system * 100 / sum;
