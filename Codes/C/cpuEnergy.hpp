@@ -14,11 +14,11 @@ void energyPrint(void);
 
 void energyPrint()
 {
-	ifstream file("/proc/uptime");
+	ifstream time("/proc/uptime");
 	string line;
 	int Cores = CoreNum();
 
-	if (!file.good())
+	if (!time.good())
 	{
 		cerr << "Could not open file.... exitting..." << endl;
 		exit(EXIT_FAILURE);
@@ -28,7 +28,7 @@ void energyPrint()
 	//while (true)
 	//{
 
-		while (getline(file, line))
+		while (getline(time, line))
 		{
 			stringstream linestream(line);
 			string token;
@@ -55,15 +55,15 @@ void energyPrint()
 		}
 		//usleep(500000);
 		//clearScreen();
-		file.close();
-/*
-		file.open("/proc/uptime");
-		if (!file.good())
+		time.close();
+
+		time.open("/proc/uptime");
+		if (!time.good())
 		{
 			cerr << "Could not open file.... exitting..." << endl;
 			exit(EXIT_FAILURE);
 		}
+  time.close();
 	}
-*/
-	//file.close();
-}
+
+	

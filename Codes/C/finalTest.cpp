@@ -3,7 +3,7 @@
 #include "Meminfo.hpp"
 #include <fstream>
 #include <iostream>
-#include "uptime.hpp"
+#include "upTime.hpp"
 #include "cpuEnergy.hpp"
 using namespace std;
 int main() {
@@ -11,19 +11,10 @@ int main() {
    
     cpuPrint();
     memPrint();
-    cout<<"------------------------------------------------------------------------"<<endl;
     timePrint();
     energyPrint();
-  
     usleep(500000);
     clearScreen();
-    // statClose(stat);
-    // memClose(mem);
-    // statReopen(stat);
-    // memReopen(mem);
-
-    // stat.close();
-    // mem.close();
   }
   return 0;
 }

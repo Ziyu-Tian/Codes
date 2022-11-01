@@ -10,9 +10,7 @@
 #include <iomanip> // library used to set precision
 #include "CoreNum.hpp"
 using namespace std;
-void cpuPrint(ifstream &stat);
-void statClose(ifstream &stat);
-void statReopen(ifstream &stat);
+void cpuPrint();
 void cpuPrint()
 {
     ifstream stat("/proc/stat");
@@ -38,11 +36,11 @@ void cpuPrint()
     cout << endl;
     cout << "Total CPU Cores: " << Cores << endl
          << "-----------------------------------------------------------------------"
-         << endl << setw(5)
-         << "CPU\t"
-         << "busy\t"
-         << "idle\t"
-         << "system\t"
+         << endl 
+         << "CPU \t" 
+         << "busy \t"
+         << "idle \t"
+         << "system \t"
          << "nice"<<endl;
     while (getline(stat, line))
     {
@@ -72,7 +70,7 @@ void cpuPrint()
                 percentage[i][3] = (float)nice * 100 / sum;
 
                 cout << "cpu" << i << "\t"
-                     << fixed << setprecision(2)
+                     << fixed << setprecision(1)
                      << percentage[i][0] << "%\t"
                      << percentage[i][1] << "%\t"
                      << percentage[i][2] << "%\t"
@@ -81,32 +79,17 @@ void cpuPrint()
             }
         }
     }
-    // usleep(500000);
-    // clearScreen();
 
-    // stat.close();
-    // stat.open("/proc/stat");
-    /*
+     stat.close();
+     stat.open("/proc/stat");
+    
     if (!stat.good())
     {
         cerr << "Could not open file.... exitting..." << endl;
         exit(EXIT_FAILURE);
     }
-    */
-    //}
+    
+
      stat.close();
 }
-void statClose(ifstream &stat)
-{
-    stat.close();
-}
 
-void statReopen(ifstream &stat)
-{
-    stat.open("/proc/stat");
-    if (!stat.good())
-    {
-        cerr << "Could not open file.... exitting..." << endl;
-        exit(EXIT_FAILURE);
-    }
-}

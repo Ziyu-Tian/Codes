@@ -10,9 +10,8 @@
 #include <iomanip>
 using namespace std;
 
-void memPrint(ifstream&mem);
-void memClose(ifstream &mem);
-void memReopen(ifstream &mem);
+void memPrint();
+
 
 void memPrint()
 {
@@ -23,9 +22,7 @@ void memPrint()
         cerr << "Could not open file.... exitting..." << endl;
         exit(EXIT_FAILURE);
     }
-    //clearScreen();
-    // while (true)
-    //{
+
     long double Total = 0;
     long double Free = 0;
     long double Buffers = 0;
@@ -60,42 +57,24 @@ void memPrint()
 
     cout << "-----------------------------------------------------------------------"
          << endl
-         << "MEMORY\t"
-         << "Total: " << fixed << setprecision(2)
-         << Total << "MB" << endl
+         << "MEMORY \t"
+         << "Total: " << fixed << setprecision(0)
+         << Total << " MB" << endl
          << "      \t"
-         << "Free: " << Free << "MB" << endl
+         << "Free: " << Free << " MB" << endl
          << "      \t"
-         << "Cached: " << Cached << "MB" << endl
+         << "Cached: " << Cached << " MB" << endl
          << "      \t"
-         << "Buffers: " << Buffers << "MB" << endl;
+         << "Buffers: " << Buffers << " MB" << endl;
+      cout<<"------------------------------------------------------------------------"<<endl;
 
-    /*
-            usleep(500000);
-            clearScreen();
             mem.close();
-
             mem.open("/proc/meminfo");
             if (!mem.good())
             {
                 cerr << "Could not open file.... exitting..." << endl;
                 exit(EXIT_FAILURE);
             }
-    */
-    //}
+    
      mem.close();
-}
-
-void memClose(ifstream &mem)
-{
-    mem.close();
-}
-void memReopen(ifstream &mem)
-{
-    mem.open("/proc/meminfo");
-    if (!mem.good())
-    {
-        cerr << "Could not open file.... exitting..." << endl;
-        exit(EXIT_FAILURE);
-    }
 }
