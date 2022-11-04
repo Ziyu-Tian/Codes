@@ -12,6 +12,7 @@ int main()
     int chances = 7;
     int count = 0;
     unsigned int seed;
+
     seed = time(0);
     srand(seed);
     ifstream dictionary;
