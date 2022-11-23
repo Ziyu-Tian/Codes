@@ -104,7 +104,7 @@ void energyPrint() {
          << "In Activate State: " << fixed << setprecision(2) << ActivePower
          << " MJoules" << endl
          << "      \t"
-         << "In idle State: " << idlePower << " MJoules" << endl;
+         << "In idle State: " <<IdlePower << " MJoules" << endl;
   }
   // usleep(500000);
   // clearScreen();
