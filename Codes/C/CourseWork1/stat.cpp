@@ -55,17 +55,15 @@ void cpuPrint()
     long long unsigned int sum = 0;
     float percentage[200][200];                // two-dimension array store the table of cpu
     memset(percentage, 0, sizeof(percentage)); // initialize array with 0
-    int Cores = CoreNum();
+    int Cores = CoreNum(); // call the corenum() to calculate the cores number
     if (!stat.good())
     {
         cerr << "Could not open file.... exitting..." << endl;
         exit(EXIT_FAILURE);
     }
 
-    //clearScreen();
+  // file open check
 
-    // while (true)
-    // {
     int i = 0;
 
     cout << "-----------------------------------------------------------------------";
@@ -87,12 +85,9 @@ void cpuPrint()
         long long unsigned int nice = 0;
         long long unsigned int system = 0;
         long long unsigned int idle = 0;
-        //long long unsigned int iowait = 0;
-        //long long unsigned int irq = 0;
-        //long long unsigned int softirq = 0;
-        if (token[0] == 'c' && token[1] == 'p' && !(token == "cpu"))
+        if (token[0] == 'c' && token[1] == 'p' && !(token == "cpu")) // only choose "cpu n" except "cpu"
         {
-            if (i > (Cores - 1)) // The number of the core is '4', but the index is from '0'
+            if (i > (Cores - 1)) //  the index is from cpu0
             {
                 break;
             }
@@ -100,13 +95,13 @@ void cpuPrint()
             {
                 linestream >> user >> nice >> system >> idle;
                 sum = user + nice + system + idle;
-                percentage[i][0] = (float)user * 100 / sum;
+                percentage[i][0] = (float)user * 100 / sum; // assign the data to the array
                 percentage[i][1] = (float)idle * 100 / sum;
                 percentage[i][2] = (float)system * 100 / sum;
                 percentage[i][3] = (float)nice * 100 / sum;
 
                 cout << "cpu" << i << "\t"
-                     << fixed << setprecision(1)
+                     << fixed << setprecision(1) // set the precision 
                      << percentage[i][0] << "%\t"
                      << percentage[i][1] << "%\t"
                      << percentage[i][2] << "%\t"

@@ -1,19 +1,20 @@
+#include "meminfo.hpp"
 #include "stat.hpp"
 #include "uptime.hpp"
-#include "meminfo.hpp"
+#include <bits/stdc++.h> // the all-in-one header
 #include <iostream>
-#include <bits/stdc++.h>
 using namespace std;
-int main() {
-  while (true) {
-   
-    cpuPrint();
-    memPrint();
-    timePrint();
-    energyPrint();
-    usleep(500000);
-    clearScreen();
-    
+int main()
+{
+  while (true)
+  {
+
+    cpuPrint();     // print the cpu data
+    memPrint();     // print the memory data
+    timePrint();    // print the time
+    energyPrint();  // print the energy
+    usleep(500000); // suspend the program
+    clearScreen();  // clean the screen
   }
   return 0;
 }

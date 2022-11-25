@@ -4,6 +4,7 @@
 using namespace std;
 void lcd(int num...);
 void lcd(int num...)
+{
     va_list args;
     va_start(args, num);
     int array[100];

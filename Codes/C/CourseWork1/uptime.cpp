@@ -10,21 +10,22 @@ void timePrint() {
     exit(EXIT_FAILURE);
   }
 
+// open check
 
   while (getline(file, line)) {
     stringstream linestream(line);
     string token;
     long double upTime = 0;
- 
+    
     long double idleTime = 0;
 
     linestream >> upTime >> idleTime;
-    idleTime = idleTime / Cores;
-   
-    dataPrint(upTime, idleTime);
+    idleTime = idleTime / Cores; // the time for each core
+  
+    dataPrint(upTime, idleTime);// call the dataprint()
   }
- 
-  file.close();
+
+  file.close(); // close and reopen
 
   file.open("/proc/uptime");
   if (!file.good()) {
@@ -36,12 +37,12 @@ void timePrint() {
 
 //------------------------------------------------
 
-void dataPrint(long double uptime, long double idletime) {
+void dataPrint(long double uptime, long double idletime) { // dataprint used to print in required format 
 
   int hour, minute, second, total = 0;
   int hour_1, minute_1, second_1, total_1 = 0;
-  stringstream s;
-  stringstream s_1;
+  stringstream s; // s for uptime
+  stringstream s_1; // s_1 for idleTime
   s << uptime;
   s >> total;
   second = total % 60;
@@ -64,7 +65,7 @@ void dataPrint(long double uptime, long double idletime) {
   cout << "--------------------------------------------------------------------"
           "----"
        << endl;
-  // cout<<idletime<<endl;
+ 
 }
 
 //----------------------------------------------------
@@ -79,9 +80,7 @@ void energyPrint() {
     exit(EXIT_FAILURE);
   }
 
-  // clearScreen();
-  // while (true)
-  //{
+  // open check
 
   while (getline(time, line)) {
     stringstream linestream(line);
@@ -98,13 +97,16 @@ void energyPrint() {
 
     idleTime = idleTime / Cores;
 
-    IdlePower = idleTime * 22 / 1000000;
+    IdlePower = idleTime * 20 / 1000000; // the unit conversion
     ActivePower = (upTime - idleTime) * 40 / 1000000;
     cout << "ENERGY\t"
          << "In Activate State: " << fixed << setprecision(2) << ActivePower
          << " MJoules" << endl
          << "      \t"
-         << "In idle State: " <<IdlePower << " MJoules" << endl;
+         << "In idle State: " << IdlePower << " MJoules" << endl
+         << "--------------------------------------------------------------------"
+            "----"
+         << endl;
   }
   // usleep(500000);
   // clearScreen();
@@ -117,3 +119,4 @@ void energyPrint() {
   }
   time.close();
 }
+
