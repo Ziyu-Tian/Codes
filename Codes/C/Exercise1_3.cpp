@@ -166,7 +166,10 @@ void inverse(double a[][3], int n) // n is the order of the matrix, a is the two
                     }
                 }
             }
-            else cout << "Unavailable Input"; // The order larger than 3 will be invalid
+           
+                
+             else 
+            cout << "Unavailable Input"; // The order larger than 3 will be invalid
         }
     }
 }
