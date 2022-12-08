@@ -150,6 +150,7 @@ output/*
 *.txt 
 # CSV
 *.csv
+*.xlsx
 
 
 
