@@ -1,4 +1,4 @@
-#include<stdio.h>
+#include<bits/stdc++.h>
 int gcd(int m,int n);
 int main()
 {
