@@ -33,10 +33,15 @@ int main()
     }
     int array_index = rand()%50+1; // the dictionary have 50 words
     string word = array[array_index]; // randomly choose one word
+    // choose a word randomly from the dictionary.txt
+    //---------------------------------------------------------------
+
     int size = word.length();// use .length calculate the length
-    char word_1[size];
+    char word_1[20] = "";
     while (count != size && chances != 0)
     {
+        //count is the correct guess numbers, which max is the size
+        //chances is 6 (fixed)
         cout << "Please input the character you guess:" << endl;
         cin >> guess;
         for (int i = 0; i < size; i++)
@@ -45,7 +50,7 @@ int main()
             {
                 count++;
                 word_1[i] = guess;
-                //cout << guess;
+                
                 for (int j = i + 1; j < size; j++)
                 {
                     if (guess == word[j])
