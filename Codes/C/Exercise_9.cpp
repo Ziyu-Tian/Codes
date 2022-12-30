@@ -5,7 +5,7 @@ using namespace std;
 int fib(int n);
 int main()
 {
-    ofstream write;
+    ofstream write; // define the stream 
     write.open("fish.txt");
     int n; // setting the number of lines
     cout << "Please input the number:" << endl;
@@ -15,7 +15,7 @@ int main()
         int num = fib(i);
         for (int j = 0; j < num; j++)
         {
-            write<<"><((º> ";
+            write<<"><((º> "; // write the fish into file "write"
         }
         write<<endl;
     }
