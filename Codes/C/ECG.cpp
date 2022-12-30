@@ -9,12 +9,6 @@ int main()
     ifstream ecg;
     ecg.open("data.csv");
     unsigned int Range[50];
-    /*
-    for (size_t i = 0; i < 11; i++)
-    {
-        Range[i] = 0;
-    }
-    */
    fill(Range,Range+10,0);
     
     // the array need to be set '0'
