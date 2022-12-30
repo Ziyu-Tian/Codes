@@ -3,20 +3,13 @@ using namespace std;
 //string stringProcess(string s);
 int main()
 {
-   string s;
-    
-    
-   //char a[10];
-    //char* ptr;
-    //ptr = &s[0];
-    //*ptr = '1';
-    
-    for (int i = 0; i < 5; i++)
-    {
-        s[i] = 'a';
-    }
+   string s_1 = "hello";
+   string s_2 = "";
 
-    cout << s <<endl;
+   s_2.append(2,s_1[1]);
+
+
+    cout << s_2 <<endl;
     
     
     return 0;
