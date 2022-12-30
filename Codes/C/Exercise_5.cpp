@@ -17,7 +17,8 @@ int main()
 }
 void do_encrypt(char m[])
 {
-    int size = strlen(m);
+    int size = strlen(m)-1;// strlen can calculate the length of character array
+    // the '\0' is the last element
     for (int i = 0; i < size; i++)
     {
        m[i] = ((m[i] * 9) % 96) + 31;
