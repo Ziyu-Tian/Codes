@@ -37,7 +37,7 @@ int main()
     //---------------------------------------------------------------
 
     int size = word.length();// use .length calculate the length
-    char word_1[20] = "";
+    char word_1[20] = ""; // initialize the char array with empty (which variable length array cannot be)
     while (count != size && chances != 0)
     {
         //count is the correct guess numbers, which max is the size
@@ -58,7 +58,7 @@ int main()
                         count++;
 
                         word_1[j] = guess;
-                        //cout << guess;
+                        
                     }
                     else
                     {
@@ -67,7 +67,7 @@ int main()
                             word_1[j] = '_';
                         }
 
-                        //cout << "_";
+                        
                     }
                 }
                 for (int i = 0; i < size; i++)
@@ -83,7 +83,7 @@ int main()
                 {
                     word_1[i] = '_';
                 }
-                //cout << "_";
+               
                 if (i == size - 1)
                 {
                     chances--;
