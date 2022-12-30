@@ -12,7 +12,7 @@ int main()
         int num = fib(i);
         for (int j = 0; j < num; j++)
         {
-            cout<<"><((º> ";
+            cout<<"><((º> "; // print the fish 
         }
         cout<<endl;
     }
