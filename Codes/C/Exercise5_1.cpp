@@ -43,7 +43,7 @@ void lcd(int num...)
 
 int main()
 {
-    lcd(3,3,4,5);
+    lcd(3,4,5);
     return 0;
 }
 
