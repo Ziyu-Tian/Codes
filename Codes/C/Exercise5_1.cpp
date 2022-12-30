@@ -37,13 +37,14 @@ void lcd(int num...)
             break;
         } 
     }
+
     cout << max << endl;
 
 }
 
 int main()
 {
-    lcd(3,4,5);
+    lcd(4,5,7,9,13);
     return 0;
 }
 
