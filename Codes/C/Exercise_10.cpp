@@ -3,12 +3,13 @@
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
+#include <iomanip>
 using namespace std;
-float P_1(float v,int f);// the power calculation function 
+float P_1(float v, int f);       // the power calculation function
 int main(int argc, char *argv[]) // the main function parameters
 {
     ofstream data;
-    data.open("power.csv");// open the target file 
+    data.open("power.csv"); // open the target file
     float Low_V, High_V, increment = 0;
 
     string high_string, low_string, increment_string;
@@ -35,7 +36,7 @@ int main(int argc, char *argv[]) // the main function parameters
         convert >> increment;
         convert.clear();
     }
-    
+
     float current_V = Low_V;
     data << "Current Voltage,"
          << "Power@20MHz,"
@@ -44,24 +45,22 @@ int main(int argc, char *argv[]) // the main function parameters
          << "Power@80MHz,"
          << "Power@100MHz"
          << endl;
-    // print the titles 
-    while (current_V<High_V || current_V == High_V)
+    // print the titles
+    while (current_V < High_V || current_V == High_V)
     {
 
-        data<<current_V<<",";
-        data<<P_1(current_V,20)<<","
-            <<P_1(current_V,40)<<","
-            <<P_1(current_V,60)<<","
-            <<P_1(current_V,80)<<","
-            <<P_1(current_V,100)<<endl;
+        data << setprecision(3) << current_V << ",";
+        data << setprecision(3) << P_1(current_V, 20) << ","
+             << P_1(current_V, 40) << ","
+             << P_1(current_V, 60) << ","
+             << P_1(current_V, 80) << ","
+             << P_1(current_V, 100) << endl;
         current_V += increment;
     }
 
-
     return 0;
 }
-float P_1(float v,int f)
+float P_1(float v, int f)
 {
-   return v*v*f;
+    return v * v * f;
 }
-
