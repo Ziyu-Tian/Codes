@@ -4,15 +4,16 @@
 #include <sstream>
 #include <cstdlib>
 using namespace std;
-float P_1(float v,int f);
-int main(int argc, char *argv[])
+float P_1(float v,int f);// the power calculation function 
+int main(int argc, char *argv[]) // the main function parameters
 {
     ofstream data;
-    data.open("power.csv");
+    data.open("power.csv");// open the target file 
     float Low_V, High_V, increment = 0;
-    //
+
     string high_string, low_string, increment_string;
     stringstream convert;
+    // the argv[0] is the file name and address
     low_string = string(argv[1]);
     high_string = string(argv[3]);
     increment_string = string(argv[5]);
@@ -43,6 +44,7 @@ int main(int argc, char *argv[])
          << "Power@80MHz,"
          << "Power@100MHz"
          << endl;
+    // print the titles 
     while (current_V<High_V || current_V == High_V)
     {
 
