@@ -35,7 +35,7 @@ void lcd(int num...)
     } 
     va_end(args);// the function ends
     int max = *max_element(array,array+num);// max_elements return the max 
-    of the address of the max element in array.
+    //of the address of the max element in array.
     int sum=0;
     for ( ;;max++) // search the lcd from max element reduce the try times
     {
