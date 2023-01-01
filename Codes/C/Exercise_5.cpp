@@ -1,5 +1,6 @@
 #include<iostream>
 #include<string>
+#include<cstring>
 using namespace std;
 void do_encrypt(char m[]);
 void display_message(char m[]);
