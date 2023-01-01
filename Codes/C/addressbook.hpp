@@ -166,7 +166,7 @@ void showPerson(addressBook *book)
                  << book->personalInfo[i].d << endl;
             cout << "----------------------------" << endl;
         }
-        
+        cout << "Press ENTER to continue..." << endl;
         cin.get();
         cin.ignore();
     }
