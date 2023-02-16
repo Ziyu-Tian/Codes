@@ -1,63 +1,49 @@
-library IEEE;
-use IEEE.std_logic_1164.all;
+LIBRARY IEEE;
+USE IEEE.std_logic_1164.ALL;
 
-entity tb_coder is
-end entity tb_coder;
+ENTITY tb_coder IS
+END ENTITY;
 
-architecture rtl of tb_coder is 
+ARCHITECTURE rtl OF tb_coder IS
 
-signal a,b,c,d,e,f,f0,f1,f2,f3:std_logic:='0';
-
-	component pri_enc is 
-		port(a: in std_logic;
-         b: in std_logic;
-         c: in std_logic;
-         d: in std_logic;
-         e: in std_logic;
-         f: in std_logic;
-         f0: out std_logic;
-         f1: out std_logic;
-         f2: out std_logic
+    COMPONENT pri_enc IS
+        PORT (
+            a, b, c, d, e, f : IN STD_LOGIC;
+            f0 : OUT STD_LOGIC;
+            f1 : OUT STD_LOGIC;
+            f2 : OUT STD_LOGIC
         );
-	end component;
+    END COMPONENT;
+    SIGNAL a, b, c, d, e, f, f0, f1, f2 : STD_LOGIC := '0';
 
+BEGIN
 
-begin
-
-CODER : pri_enc port map(
-	a =>a,
-    b=>b,
-    c=>c,
-    d=>d,
-    e=>e,
-    f=>f,
-    f0 =>f0,
-    f1=>f1,
-    f2=>f2
+    UUT : pri_enc PORT MAP(
+        a, b, c, d, e, f, f0, f1, f2;
     );
-    
-stimulus: process
-begin
-    a <= '0'; 
-    b <= '0';
-    c <= '0'; 
-    d <= '0'; 
-    e <= '0'; 
-    f <= '0'; wait for 100 ns;
-    a <= '0'; 
-    b <= '0';
-    c <= '0'; 
-    d <= '0'; 
-    e <= '0'; 
-    f <= '1'; wait for 100 ns;
-    a <= '0'; 
-    b <= '0';
-    c <= '0'; 
-    d <= '0'; 
-    e <= '1'; 
-    f <= '-'; wait for 100 ns;
-    wait;
-end process;
-	
 
-end rtl;
+    stimulus : PROCESS
+    BEGIN
+        a <= '0';
+        b <= '0';
+        c <= '0';
+        d <= '0';
+        e <= '0';
+        f <= '0';
+        WAIT FOR 100 ns;
+        a <= '0';
+        b <= '0';
+        c <= '0';
+        d <= '0';
+        e <= '0';
+        f <= '1';
+        WAIT FOR 100 ns;
+        a <= '0';
+        b <= '0';
+        c <= '0';
+        d <= '0';
+        e <= '1';
+        f <= '-';
+        WAIT;
+    END PROCESS;
+END ARCHITECTURE;

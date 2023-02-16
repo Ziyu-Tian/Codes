@@ -11,7 +11,7 @@ END ENTITY;
 
 ARCHITECTURE gate_level OF xor_gate IS
 
-    SIGNAL An, Bn, t1, t2 : STD_LOGIC := 0;
+    SIGNAL An, Bn, t1, t2 : STD_LOGIC := '0';
 BEGIN
     An <= NOT A;
     Bn <= NOT B;
