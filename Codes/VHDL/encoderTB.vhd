@@ -44,6 +44,13 @@ BEGIN
         d <= '0';
         e <= '1';
         f <= '-';
+        WAIT FOR 100 ns;
+        a <= '0';
+        b <= '0';
+        c <= '0';
+        d <= '1';
+        e <= '-';
+        f <= '-';
         WAIT;
     END PROCESS;
 END ARCHITECTURE;
