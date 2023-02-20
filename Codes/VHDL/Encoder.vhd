@@ -31,7 +31,7 @@ BEGIN
         "110" WHEN "1-----",
         "---" when others;
 
-        f0 <= enc_out(0);
+    f0 <= enc_out(0);
     f1 <= enc_out(1);
     f2 <= enc_out(2);
 END rtl;

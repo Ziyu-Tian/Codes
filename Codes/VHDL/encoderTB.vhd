@@ -19,7 +19,7 @@ ARCHITECTURE rtl OF tb_coder IS
 BEGIN
 
     UUT : pri_enc PORT MAP(
-        a, b, c, d, e, f, f0, f1, f2;
+        a, b, c, d, e, f, f0, f1, f2
     );
 
     stimulus : PROCESS
