@@ -1,3 +1,4 @@
 syms t;
-[x,y]=dsolve('Dx-2*x-y=0,Dy+18*x+7*y=0','x(0)=4','y(0)=-15',t);
+fun = (s+1)*(s+2)*(s^2+20*s+1700);
+s=solve(fun,s);
 disp([x,y]);
