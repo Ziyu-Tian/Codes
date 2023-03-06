@@ -24,7 +24,7 @@ ARCHITECTURE rtl OF tb_coder2 IS
 BEGIN
 
     UUT : sec_enc PORT MAP(
-        a, b, c, d, e, f, f0, f1, f2
+        a, b, c, d, e, f, g, h, f0, f1, f2
     );
 
     stimulus : PROCESS
