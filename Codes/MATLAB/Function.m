@@ -1,11 +1,11 @@
-syms x;
-f_1= atan(6./x)-atan(4./x);
-f_2=rad2deg(f_1);
+syms t;
+f_1= -2*cos(t)+2*sin(t);
+%f_2=rad2deg(f_1);
 figure (1);
-fplot(f_2,[0,100],'r');
+fplot(f_1,[0,1000],'r');
 grid on;
-xlabel('x');
-ylabel('y');
+xlabel('t');
+ylabel('x');
 pause(200);
 
 
