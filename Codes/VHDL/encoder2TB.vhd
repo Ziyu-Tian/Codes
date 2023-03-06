@@ -46,8 +46,8 @@ BEGIN
         f2 <= '1';
         WAIT FOR 1 ns;
         f0 <= '1';
-        f1 <= '1';
-        f2 <= '1';
+        f1 <= '0';
+        f2 <= '0';
         WAIT;
     END PROCESS;
 END ARCHITECTURE;
