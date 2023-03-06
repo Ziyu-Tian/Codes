@@ -33,7 +33,7 @@ BEGIN
         "00100000" WHEN "101",
         "01000000" WHEN "110",
         "10000000" WHEN "111",
-        "---" when others;
+        "--------" when others;
 
     a <= enc_out(0);
     b <= enc_out(1);
