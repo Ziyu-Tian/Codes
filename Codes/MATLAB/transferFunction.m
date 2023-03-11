@@ -1,7 +1,24 @@
 
-G_1 = tf(1,[1 23 1762 5140 3400]);
+den = poly([-1 -2 -3]);
 figure(1);
-pzmap(G_1)
+g_1 = tf(1,den);
+g_2 = tf(10,den);
+g_3 = tf(100,den);
+gcl = feedback(g_1, 1);
+gcl_2 = feedback(g_2, 1);
+gcl_3 = feedback(g_3, 1);
+figure(1);
+step(gcl);
+hold on
+step(gcl_2);
+figure(2);
+hold on
+step(gcl_3);
+%step(gcl,'-b');
+%hold on
+%step(gcl_2,'-r');
+%hold on
+%step(gcl_3,'-g');
 grid on;
 
 %{
