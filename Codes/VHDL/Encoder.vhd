@@ -1,3 +1,4 @@
+-- 6 to 3 bit priority encoder
 LIBRARY IEEE;
 USE IEEE.std_logic_1164.ALL;
 

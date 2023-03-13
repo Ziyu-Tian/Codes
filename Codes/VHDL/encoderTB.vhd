@@ -1,3 +1,4 @@
+-- 6 to 3 bits priotity encoder testbench
 LIBRARY IEEE;
 USE IEEE.std_logic_1164.ALL;
 
