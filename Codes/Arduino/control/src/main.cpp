@@ -20,10 +20,12 @@ void setup()
   // put your setup code here, to run once:
   myServo.attach(servoPWM);
   //Serial.begin(9600);
+  /*
   pinMode(leftSensor, INPUT);
   pinMode(rightSensor, INPUT);
   pinMode(buttonPin,OUTPUT);
   attachInterrupt(digitalPinToInterrupt(buttonPin), interruptWrite, CHANGE);
+  */
 }
 
 void loop()
@@ -33,14 +35,14 @@ void loop()
 
   // read the difference between the left and right sensor 
 
-  /*
+  
   myServo.writeMicroseconds(1200);
   delay(2000);
   myServo.writeMicroseconds(1500);
   delay(2000);
   myServo.writeMicroseconds(1800);
   delay(2000);
-  */
+  
 }
 
 void interruptWrite()
