@@ -1,22 +1,29 @@
-syms a b c;
-L = sqrt((25-c)*(a+b-2*c)+2*c*25-c^2);
+syms a;
+syms b;
+syms c;
+syms L;
+syms x;
+f = -1/(25-c)^2*(x^2+x*(-2*c)+2*c*25-25^2);
+area_3 = int(f, 'x', c, L);
+Y = (1/L)*((b-a)/2+c-b+area_3);
 
-equation_a = diff(L, a);
-
+firstDerivate = diff(Y, L);
 %equation_b = diff(L, b);
 
 %equation_c = diff(L, c);
 
-S_1 = solve(equation_a);
 
-%S_2 = solve(equation_b);
+
+S_2 = solve(firstDerivate ==0);
 
 %S_3 = solve(equation_c);
 
-X_1 = sprintf('dL/da = %s\n', S_1);
+X_1 = sprintf('L = %s\n', S_2);
 
 %X_2 = sprintf('dL/db = %s\n', S_2);
 
 %X_3 = sprintf('dL/dc = %s\n', S_3);
 
-disp(X_1);
+disp(S_2);
+
+
