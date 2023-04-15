@@ -24,7 +24,7 @@ architecture structural of full_adder is
     );
     end component;
 
-    -- quote the or_gate designed before
+    -- quote the and_gate designed before
 
     component and_gate is 
     port(
@@ -34,9 +34,9 @@ architecture structural of full_adder is
     );
     end component;
 
-    -- quote the xor_gate 
+    -- quote the or_gate 
 
-    component xor_gate is 
+    component or_gate is 
     port(
             a: in std_logic;
             b: in std_logic;
@@ -66,4 +66,3 @@ architecture structural of full_adder is
                 port map( a=>a1, b=>a2, c=>cout);
     end structural;
 
-    

@@ -24,7 +24,7 @@ architecture structural of half_adder is
     );
     end component;
 
-    -- quote the or_gate designed before
+    -- quote the and_gate designed before
 
     component and_gate is 
     port(
@@ -43,4 +43,4 @@ architecture structural of half_adder is
                 port map ( a=>a, b=>b,c=>s);
     end structural;
 
-    
+
