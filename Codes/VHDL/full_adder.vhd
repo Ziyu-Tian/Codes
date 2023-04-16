@@ -11,7 +11,7 @@ entity full_adder is
     );
 end full_adder;
 
--- structural level of FF
+-- structural level of FA
 
 architecture structural of full_adder is 
 
