@@ -3,17 +3,17 @@ USE IEEE.std_logic_1164.ALL;
 USE IEEE.numeric_std.ALL;
 USE IEEE.std_logic_arith.ALL;
 
-ENTITY reg_1 IS
+ENTITY reg_2 IS
 
     PORT (
-        r1CLK, r1LOAD, carry : IN STD_LOGIC;
+        r1CLK, r1LOAD : IN STD_LOGIC;
         r1in : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
         r1out : OUT STD_LOGIC
     );
 
-END reg_1;
+END reg_2;
 
-ARCHITECTURE rtl OF reg_1 IS
+ARCHITECTURE rtl OF reg_2 IS
 
     SIGNAL reg1 : STD_LOGIC_VECTOR(3 DOWNTO 0);
 
@@ -26,8 +26,7 @@ BEGIN
             ELSE
                 r1out <= reg1(0);
                 reg1(2 DOWNTO 0) <= reg1(3 DOWNTO 1);
-                reg1(3) <= carry;
-                --reg1(3) <= '0';
+                reg1(3) <= '0';
             END IF;
         END IF;
     END PROCESS;
