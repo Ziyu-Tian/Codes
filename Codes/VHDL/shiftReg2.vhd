@@ -6,28 +6,33 @@ USE IEEE.std_logic_arith.ALL;
 ENTITY reg_2 IS
 
     PORT (
-        r1CLK, r1LOAD : IN STD_LOGIC;
-        r1in : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
-        r1out : OUT STD_LOGIC
+        r2CLK, r2CLR, carry : IN STD_LOGIC;
+        r2in : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
+        Cout : OUT STD_LOGIC;
+        r2OUT : OUT STD_LOGIC_VECTOR(3 DOWNTO 0)
     );
 
 END reg_2;
 
 ARCHITECTURE rtl OF reg_2 IS
 
-    SIGNAL reg1 : STD_LOGIC_VECTOR(3 DOWNTO 0);
+    SIGNAL reg2 : STD_LOGIC_VECTOR(3 DOWNTO 0);
 
 BEGIN
-    reg : PROCESS (r1CLK, r1LOAD)
+    reg : PROCESS (r2CLK, r2CLR)
     BEGIN
-        IF r1CLK'event AND r1CLK = '1' THEN
-            IF r1LOAD = '1' THEN
-                reg1 <= r1in;
-            ELSE
-                r1out <= reg1(0);
-                reg1(2 DOWNTO 0) <= reg1(3 DOWNTO 1);
-                reg1(3) <= '0';
-            END IF;
+       
+
+        IF r2CLK'event AND r2CLK = '1' THEN
+            reg2 <= r2in;
+            Cout <= reg2(0);
+            reg2(2 DOWNTO 0) <= reg2(3 DOWNTO 1);
+            reg2(3) <= carry;
+        END IF; 
+        
+        IF r2CLR = '1' THEN
+            reg2 <= "0000";
         END IF;
-    END PROCESS;
+END PROCESS;
+r2OUT <= reg2;
 END rtl;
