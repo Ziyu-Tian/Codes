@@ -26,7 +26,6 @@ ARCHITECTURE structural OF adder4 IS
     end component;
         SIGNAL Sum : STD_LOGIC_VECTOR(3 DOWNTO 0);
         SIGNAL Carry : STD_LOGIC_VECTOR(3 DOWNTO 0);
-    end component;
     BEGIN
 
         a1 : full_adder
