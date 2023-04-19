@@ -21,18 +21,16 @@ ARCHITECTURE rtl OF reg_2 IS
 BEGIN
     reg : PROCESS (r2CLK, r2CLR)
     BEGIN
-       
 
-        IF r2CLK'event AND r2CLK = '1' THEN
-            reg2 <= r2in;
-            Cout <= reg2(0);
-            reg2(2 DOWNTO 0) <= reg2(3 DOWNTO 1);
-            reg2(3) <= carry;
-        END IF; 
-        
-        IF r2CLR = '1' THEN
-            reg2 <= "0000";
+        IF (r2CLR = '1') THEN
+            reg2 <= (OTHERS => '0');
+        ELSIF (r2CLK'event AND r2CLK = '1') THEN
+            reg2(3)<= carry;
+	    reg2(2)<= r2in(3);
+	    reg2(1)<= r2in(2);
+	    reg2(0)<= r2in(1);
         END IF;
-END PROCESS;
-r2OUT <= reg2;
+    END PROCESS;
+    r2OUT <= reg2;
+    Cout <= r2in(0);
 END rtl;

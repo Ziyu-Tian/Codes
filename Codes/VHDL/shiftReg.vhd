@@ -7,7 +7,7 @@ ENTITY reg_1 IS
 
     PORT (
         r1CLK, r1LOAD : IN STD_LOGIC;
-	carry : IN STD_LOGIC;
+	    carry : IN STD_LOGIC;
         r1in : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
         r1out : OUT STD_LOGIC
     );
