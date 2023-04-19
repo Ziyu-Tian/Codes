@@ -9,7 +9,9 @@ ENTITY reg_1 IS
         r1CLK, r1LOAD : IN STD_LOGIC;
 	    carry : IN STD_LOGIC;
         r1in : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
-        r1out : OUT STD_LOGIC
+        r1out : OUT STD_LOGIC;
+        --
+        out4: OUT std_logic_vector(3 downto 0)
     );
 
 END reg_1;
@@ -34,4 +36,5 @@ BEGIN
         END IF;
     END PROCESS;
 	r1out <= temp;
+    out4 <= reg1;
 END rtl;
