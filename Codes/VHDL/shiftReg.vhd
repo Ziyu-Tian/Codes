@@ -23,7 +23,7 @@ ARCHITECTURE rtl OF reg_1 IS
 
 BEGIN
     reg : PROCESS (r1CLK, r1LOAD)
-    BEGIN
+    BEGINs
         IF r1CLK'event AND r1CLK = '1' THEN
             IF r1LOAD = '1' THEN
                 reg1 <= r1in;
