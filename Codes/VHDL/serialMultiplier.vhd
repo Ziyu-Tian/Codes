@@ -33,29 +33,27 @@ ARCHITECTURE structural OF serial_multi IS
 
     COMPONENT reg_1
         PORT (
-            r1CLK, r1LOAD : IN STD_LOGIC;
-            carry : IN STD_LOGIC;
-            r1in : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
-            r1out : OUT STD_LOGIC;
-            out4 : OUT STD_LOGIC_VECTOR(3 DOWNTO 0)
+            	r1CLK, r1LOAD : IN STD_LOGIC;
+        	r1in : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
+        	r1out : OUT STD_LOGIC
         );
     END COMPONENT;
 
     COMPONENT reg_2
         PORT (
-            r2CLK, r2CLR, carry : IN STD_LOGIC;
-            r2in : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
-            Cout : OUT STD_LOGIC;
-            r2OUT : OUT STD_LOGIC_VECTOR(3 DOWNTO 0)
+            	r2CLK, r2CLR: IN STD_LOGIC;
+        	r2in : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
+		carry : IN STD_LOGIC;
+        	r2OUT : OUT STD_LOGIC_VECTOR(7 DOWNTO 0)
         );
     END COMPONENT;
 
-    SIGNAL newstart, RS, RR, AR2 : STD_LOGIC;
-    SIGNAL AR1, SA, RA : STD_LOGIC_VECTOR(3 DOWNTO 0);
-    SIGNAL final : STD_LOGIC_VECTOR(7 DOWNTO 0);
-    SIGNAL temp : STD_LOGIC_VECTOR(3 DOWNTO 0);
+    SIGNAL newstart, RS, AR2 : STD_LOGIC;
+    SIGNAL AR1, SA : STD_LOGIC_VECTOR(3 DOWNTO 0);
+    SIGNAL RA : STD_LOGIC_VECTOR(7 DOWNTO 0);
 
 BEGIN
+    result <= RA;
     multi : PROCESS (CLK, START)
     BEGIN
         IF START = '1' THEN
@@ -63,10 +61,6 @@ BEGIN
 
         ELSIF CLK = '0' THEN
             newstart <= '0';
-
-        ELSIF (CLK'event AND CLK = '1') THEN
-            final(7 DOWNTO 4) <= RA;
-            final(3 DOWNTO 0) <= temp;
         END IF;
     END PROCESS;
 
@@ -76,19 +70,16 @@ BEGIN
     );
     A1 : adder4
     PORT MAP(
-        SA, RA, AR1, AR2
+        SA, RA(7 downto 4), AR1, AR2
     );
     R1 : reg_1
     PORT MAP(
-        CLK, newstart, RR, R, RS, temp
+        CLK, newstart, R, RS
     );
     R2 : reg_2
     PORT MAP(
-        CLK, newstart, AR2, AR1, RR, RA
+        CLK, newstart, AR1, AR2, RA
     );
 
-    -- output connection
-
-    result <= final;
 
 END structural; -- structural
