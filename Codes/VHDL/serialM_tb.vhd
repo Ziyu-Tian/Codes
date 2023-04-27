@@ -30,7 +30,7 @@ BEGIN
     (
         CLK, START, R, D, result
     );
-
+	
     clk_gen : PROCESS
     BEGIN
         CLK <= '0';
@@ -38,8 +38,66 @@ BEGIN
         CLK <= '1';
         WAIT FOR clk_period/2;
         CLK <= '0';
+        WAIT FOR clk_period/2;
+        CLK <= '1';
+        WAIT FOR clk_period/2;
+        CLK <= '0';
+        WAIT FOR clk_period/2;
+        CLK <= '1';
+        WAIT FOR clk_period/2;
+        CLK <= '0';
+        WAIT FOR clk_period/2;
+        CLK <= '1';
+        WAIT FOR clk_period/2;
+        CLK <= '0';
+        WAIT FOR clk_period/2;
+        CLK <= '1';
+        WAIT FOR clk_period/2;
+        CLK <= '0';
+        WAIT FOR clk_period/2;
+           CLK <= '1';
+        WAIT FOR clk_period/2;
+        CLK <= '0';
+        WAIT FOR clk_period/2;
+        CLK <= '1';
+        WAIT FOR clk_period/2;
+        CLK <= '0';
+        WAIT FOR clk_period/2;
+        CLK <= '1';
+        WAIT FOR clk_period/2;
+        CLK <= '0';
+        WAIT FOR clk_period/2;
+        CLK <= '1';
+        WAIT FOR clk_period/2;
+        CLK <= '0';
+        WAIT FOR clk_period/2;
+        CLK <= '1';
+        WAIT FOR clk_period/2;
+        CLK <= '0';
+        WAIT FOR clk_period/2;
+         CLK <= '1';
+        WAIT FOR clk_period/2;
+        CLK <= '0';
+        WAIT FOR clk_period/2;
+        CLK <= '1';
+        WAIT FOR clk_period/2;
+        CLK <= '0';
+        WAIT FOR clk_period/2;
+        CLK <= '1';
+        WAIT FOR clk_period/2;
+        CLK <= '0';
+        WAIT FOR clk_period/2;
+        CLK <= '1';
+        WAIT FOR clk_period/2;
+        CLK <= '0';
+        WAIT FOR clk_period/2;
+        CLK <= '1';
+        WAIT FOR clk_period/2;
+        CLK <= '0';
+        WAIT FOR clk_period/2;
+        wait;
     END PROCESS; -- clk_gen
-
+    
     start_gen : PROCESS
     BEGIN
         START <= '1';
@@ -47,28 +105,31 @@ BEGIN
         START <= '0';
         wait for 400 ns;
         START <= '1';
-        WAIT FOR 100 NS;
+        WAIT FOR 100 ns;
         START <= '0';
         wait for 400 ns;
         START <= '1';
-        WAIT FOR 100 NS;
+        WAIT FOR 100 ns;
         START <= '0';
+        wait for 400 ns;
         WAIT;
     END PROCESS; -- START_gen
-
+    
     input : PROCESS
     BEGIN
 
         R <= "1111";
         D <= "1111";
         WAIT FOR 500 ns;
-        R <= "1101";
-        D <= "1001";
+        R <= "1001";
+        D <= "1101";
         WAIT FOR 500 ns;
-        R <= "1011";
-        D <= "1111";
+        R <= "1100";
+        D <= "1110";
         WAIT FOR 500 ns;
         WAIT;
     END PROCESS; -- input
+
+
 
 END behaviour; -- behaviour
