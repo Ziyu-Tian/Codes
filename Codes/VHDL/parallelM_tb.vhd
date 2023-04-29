@@ -30,30 +30,30 @@ BEGIN
 
     BEGIN
         A <= "0110";
-	B <= "1100";
+        B <= "1100";
 
-	wait for 100 ns;
+        WAIT FOR 100 ns;
 
-	A <= "0010";
-	B <= "0001";
+        A <= "0010";
+        B <= "0001";
 
-	wait for 100 ns;
-	A <= "0111";
-	B <= "0101";
- 
-	wait for 2 ns;
-	A <= "0100";
-	B <= "1101";
- 
-	wait for 100 ns;
-	A <= "1010";
-	B <= "1110";
- 
-	wait for 100 ns;
-	A <= "1011";
-	B <= "1011";
- 
-	wait for 100 ns;
-	wait;
+        WAIT FOR 100 ns;
+        A <= "0111";
+        B <= "0101";
+
+        WAIT FOR 100 ns;
+        A <= "0100";
+        B <= "1101";
+
+        WAIT FOR 100 ns;
+        A <= "1010";
+        B <= "1110";
+
+        WAIT FOR 100 ns;
+        A <= "1011";
+        B <= "1011";
+
+        WAIT FOR 100 ns;
+        WAIT;
     END PROCESS;
 END ARCHITECTURE;
