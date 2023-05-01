@@ -53,3 +53,6 @@ float sensorRead()
     float difference = (analogRead(leftSensor) -analogRead(rightSensor)) * 5 /1023;
     return difference;
 }
+
+double rotation_data[] = {65,  77.5, 90, 102.5, 115};
+double difference[]    = {-67, -35,   3,    33,  65};
