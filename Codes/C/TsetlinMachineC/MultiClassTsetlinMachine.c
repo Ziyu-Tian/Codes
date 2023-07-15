@@ -36,6 +36,7 @@ https://arxiv.org/abs/1804.01508
 
 /*** Initialize Tsetlin Machine ***/
 struct MultiClassTsetlinMachine *CreateMultiClassTsetlinMachine()
+//initialize the 
 {
 
 	struct MultiClassTsetlinMachine *mc_tm;

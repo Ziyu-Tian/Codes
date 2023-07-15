@@ -36,6 +36,7 @@ https://arxiv.org/abs/1804.01508
 
 /*** Initialize Tsetlin Machine ***/
 struct TsetlinMachine *CreateTsetlinMachine()
+// Set up the initial state in middle state
 {
 	struct TsetlinMachine *tm = (void *)malloc(sizeof(struct TsetlinMachine));
 
