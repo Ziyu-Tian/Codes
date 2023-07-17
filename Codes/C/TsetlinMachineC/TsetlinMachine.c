@@ -69,7 +69,7 @@ static inline int action(int state)
 		return state > NUMBER_OF_STATES;
 }
 
-/* Calculate the output of each clause using the actions of each Tsetline Automaton. */
+/* Calculate the output of each clause using the actions of each Tsetlin Automaton. */
 /* Output is stored an internal output array. */
 
 static inline void calculate_clause_output(struct TsetlinMachine *tm, int Xi[], int predict)
@@ -192,6 +192,7 @@ void  tm_update(struct TsetlinMachine *tm, int Xi[], int target, float s) {
 	// Calculate feedback to clauses
 	for (int j = 0; j < CLAUSES; j++) {
 		(*tm).feedback_to_clauses[j] = (2*target-1)*(1 - 2 * (j & 1))*(1.0*rand()/RAND_MAX <= (1.0/(THRESHOLD*2))*(THRESHOLD + (1 - 2*target)*class_sum));
+		// Feedback classification condition 
 	}
 	
 	/*********************************/
@@ -205,7 +206,6 @@ void  tm_update(struct TsetlinMachine *tm, int Xi[], int target, float s) {
 			type_ii_feedback(tm, Xi, j);
 		}
 	}
-	// if target == 0, which is the last-call in mc_tm_update, print the result of current training example and current FSM graph
 	
 	
 }

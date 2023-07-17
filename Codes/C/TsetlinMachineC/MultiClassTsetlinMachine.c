@@ -36,14 +36,15 @@ https://arxiv.org/abs/1804.01508
 
 /*** Initialize Tsetlin Machine ***/
 struct MultiClassTsetlinMachine *CreateMultiClassTsetlinMachine()
-//initialize the 
+// initialize each class with each strcut
 {
 
 	struct MultiClassTsetlinMachine *mc_tm;
 
 	mc_tm = (void *)malloc(sizeof(struct MultiClassTsetlinMachine));
 
-	for (int i = 0; i < CLASSES; i++) {
+	for (int i = 0; i < CLASSES; i++)
+	{
 		mc_tm->tsetlin_machines[i] = CreateTsetlinMachine();
 	}
 	return mc_tm;
@@ -51,7 +52,8 @@ struct MultiClassTsetlinMachine *CreateMultiClassTsetlinMachine()
 
 void mc_tm_initialize(struct MultiClassTsetlinMachine *mc_tm)
 {
-	for (int i = 0; i < CLASSES; i++) {
+	for (int i = 0; i < CLASSES; i++)
+	{
 		tm_initialize(mc_tm->tsetlin_machines[i]);
 	}
 }
@@ -67,34 +69,40 @@ float mc_tm_evaluate(struct MultiClassTsetlinMachine *mc_tm, int X[][FEATURES], 
 	int max_class_sum;
 
 	errors = 0;
-	for (int l = 0; l < number_of_examples; l++) {
+	for (int l = 0; l < number_of_examples; l++)
+	{
 		/******************************************/
 		/*** Identify Class with Largest Output ***/
 		/******************************************/
 
 		max_class_sum = tm_score(mc_tm->tsetlin_machines[0], X[l]);
 		max_class = 0;
-		for (int i = 1; i < CLASSES; i++) {	
+		for (int i = 1; i < CLASSES; i++)
+		{
 			int class_sum = tm_score(mc_tm->tsetlin_machines[i], X[l]);
-			if (max_class_sum < class_sum) {
+			if (max_class_sum < class_sum)
+			{
 				max_class_sum = class_sum;
 				max_class = i;
 			}
 		}
 
-		printf("Example %d := %d\t",l,max_class);
+		// printf("Example %d := %d\t",l,max_class);
 
-		if (max_class != y[l]) {
+		if (max_class != y[l])
+		{
 			errors += 1;
-			printf("Wrong Prediction\n");
+			// printf("Wrong Prediction\n");
 		}
+		/*
 		else
 		{
 			printf("Correct Prediction\n");
 		}
+		*/
 	}
 	return errors;
-	//return 1.0 - 1.0 * errors / number_of_examples;
+	// return 1.0 - 1.0 * errors / number_of_examples;
 }
 
 /******************************************/
@@ -108,10 +116,11 @@ void mc_tm_update(struct MultiClassTsetlinMachine *mc_tm, int Xi[], int target_c
 {
 	tm_update(mc_tm->tsetlin_machines[target_class], Xi, 1, s);
 
-	// Randomly pick one of the other classes, for pairwise learning of class output 
-	unsigned int negative_target_class = (unsigned int)CLASSES * 1.0*rand()/((unsigned int)RAND_MAX+1);// floating number [0,1)
-	while (negative_target_class == target_class) {
-		negative_target_class = (unsigned int)CLASSES * 1.0*rand()/((unsigned int)RAND_MAX+1);
+	// Randomly pick one of the other classes, for pairwise learning of class output
+	unsigned int negative_target_class = (unsigned int)CLASSES * 1.0 * rand() / ((unsigned int)RAND_MAX + 1); // floating number [0,1)
+	while (negative_target_class == target_class)
+	{
+		negative_target_class = (unsigned int)CLASSES * 1.0 * rand() / ((unsigned int)RAND_MAX + 1);
 	}
 
 	tm_update(mc_tm->tsetlin_machines[negative_target_class], Xi, 0, s);
@@ -123,13 +132,26 @@ void mc_tm_update(struct MultiClassTsetlinMachine *mc_tm, int Xi[], int target_c
 
 void mc_tm_fit(struct MultiClassTsetlinMachine *mc_tm, int X[][FEATURES], int y[], int number_of_examples, int epochs, float s)
 {
-	for (int epoch = 0; epoch < epochs; epoch++) {
-		// Add shuffling here...		
-		for (int i = 0; i < number_of_examples; i++) {
-			mc_tm_update(mc_tm, X[i], y[i], s);
-			
 
+	float accuracy = 0.0;
+	int errors = 0;
+	for (int epoch = 0; epoch < epochs; epoch++)
+	{
+		// Add shuffling here...
+
+		printf("Batch %d\n", epoch + 1);
+		printf("------------------\n");
+		for (int i = 0; i < number_of_examples; i++)
+		{
+			printf("Example %d :\t", i + 1);
+			mc_tm_update(mc_tm, X[i], y[i], s);
+
+			if ((int)mc_tm_evaluate(mc_tm, X, y, 1) == 1)
+			{
+				errors += 1;
+			}
+			accuracy = 1 - ((float)errors / (i + 1 + number_of_examples * (epoch)));
+			printf("Accuracy: %f\n", accuracy);
 		}
 	}
 }
-

@@ -6,7 +6,7 @@
 #include <string.h>
 #include <math.h>
 
-#define NUMBER_OF_EXAMPLES 5
+#define NUMBER_OF_EXAMPLES 100
 #define NUMBER_OF_TESTING 50
 
 int X_train[NUMBER_OF_EXAMPLES][FEATURES];
@@ -44,7 +44,7 @@ void read_file(void)
 		token = strtok(line, s);
 		for (int j = 0; j < FEATURES; j++)
 		{
-			X_train[i][j] = round(atoi(token)); // convert input data to double 
+			X_train[i][j] = round(atoi(token)); // convert input data to double
 			token = strtok(NULL, s);
 			// strtok should be set to NULL after each usage
 		}
@@ -71,6 +71,114 @@ void read_file(void)
 		y_test[i] = round(atoi(token));
 	}
 }
+void write_file(struct MultiClassTsetlinMachine *mc_tm)
+{
+	FILE *fp;
+	fp = fopen("BestEpoch.txt", "w");
+
+	if (fp == NULL)
+	{
+		printf("Error opening\n");
+		exit(EXIT_FAILURE);
+	}
+	for (int k = 0; k < CLASSES; k++)
+	{
+		// fprintf(fp, "class %d\n", k);
+
+		for (int i = 0; i < CLAUSES; i++)
+		{
+			for (int j = 0; j < FEATURES; j++)
+			{
+				int regular_state = tm_get_state(mc_tm->tsetlin_machines[k], i, j, 0);
+
+				fprintf(fp, "%d ", regular_state);
+			} // print regular_feature
+			for (int j = 0; j < FEATURES; j++)
+			{
+				int negated_state = tm_get_state(mc_tm->tsetlin_machines[k], i, j, 1);
+
+				if (j == FEATURES - 1)
+				{
+					fprintf(fp, "%d\n", negated_state);
+				}
+				else
+				{
+					fprintf(fp, "%d ", negated_state);
+				}
+			} // print negated_features
+		}
+		// fprintf(fp, "---------------------------------\n");
+	}
+}
+
+void read_test(void)
+{
+
+	FILE *fp;
+	char *line = NULL;
+	size_t len = 0;
+
+	const char *s = " ";
+	char *token = NULL;
+	fp = fopen("FullTestData.txt", "r");
+	if (fp == NULL)
+	{
+		printf("Error opening\n");
+		exit(EXIT_FAILURE);
+	}
+
+	for (int i = 0; i < NUMBER_OF_TESTING; i++)
+	{
+		getline(&line, &len, fp);
+
+		token = strtok(line, s);
+		for (int j = 0; j < FEATURES; j++)
+		{
+			X_test[i][j] = round(atoi(token));
+			token = strtok(NULL, s);
+		}
+		y_test[i] = round(atoi(token));
+	}
+}
+
+void load_epoch(struct MultiClassTsetlinMachine *mc_tm)
+{
+	FILE *fp;
+	char *line = NULL;
+	size_t len = 0;
+
+	const char *s = " ";
+	char *token = NULL;
+
+	fp = fopen("BestEpoch.txt", "r");
+	if (fp == NULL)
+	{
+		printf("Error opening\n");
+		exit(EXIT_FAILURE);
+	}
+
+	for (int k = 0; k < CLASSES; k++)
+	{
+		for (int i = 0; i < CLAUSES; i++)
+		{
+			getline(&line, &len, fp);
+
+			token = strtok(line, s);
+			for (int j = 0; j < FEATURES; j++)
+			{
+				mc_tm->tsetlin_machines[k]->ta_state[i][j][0] = round(atoi(token)); // convert input data to double
+				token = strtok(NULL, s);
+				// strtok should be set to NULL after each usage
+			}
+			for (int j = 0; j < FEATURES; j++)
+			{
+				mc_tm->tsetlin_machines[k]->ta_state[i][j][1] = round(atoi(token)); // convert input data to double
+				token = strtok(NULL, s);
+				// strtok should be set to NULL after each usage
+			}
+		}
+	}
+}
 
 int main(void)
 {
@@ -81,29 +189,73 @@ int main(void)
 	struct MultiClassTsetlinMachine *mc_tsetlin_machine = CreateMultiClassTsetlinMachine();
 
 	// float average = 0.0;
-	float total_error = 0.0;
-	float accuracy = 0.0;
-	for (int i = 0; i < 100; i++)
+	// float total_error = 0.0;
+	// float accuracy = 0.0;
+	float accuracy[10] = {0};
+	printf("Choose the operation mode ('1' for training and '2' for testing):\n");
+	int mode_select = 0;
+	scanf("%d", &mode_select);
+
+	if (mode_select == 1) // Training-mode of Tsetlin machine
 	{
-		mc_tm_initialize(mc_tsetlin_machine);
-		// clock_t start_total = clock();
-		printf("Epoch %d\n", i + 1);
-		printf("Training Session:/n");
-		mc_tm_fit(mc_tsetlin_machine, X_train, y_train, NUMBER_OF_EXAMPLES, 200, 3);
-		/*
-		clock_t end_total = clock();
-		double time_used = ((double) (end_total - start_total)) / CLOCKS_PER_SEC;
+		float max_accuracy = 0.0;
+		int max_epoch_index = 1;
+		printf("Training Start......\n");
+		printf("------------------------------\n");
+		for (int i = 0; i < 100; i++) // i = epoch number
+		{
+			mc_tm_initialize(mc_tsetlin_machine);
+			// clock_t start_total = clock();
+			
+			printf("Epoch %d: \n", i + 1);
+			mc_tm_fit(mc_tsetlin_machine, X_train, y_train, NUMBER_OF_EXAMPLES, 100, 3); // 200
+			/*
+			clock_t end_total = clock();
+			double time_used = ((double) (end_total - start_total)) / CLOCKS_PER_SEC;
 
-		printf("EPOCH %d TIME: %f\n", i+1, time_used);
-		*/
-		// average += mc_tm_evaluate(mc_tsetlin_machine, X_test, y_test, NUMBER_OF_EXAMPLES);
+			printf("EPOCH %d TIME: %f\n", i+1, time_used);
+			*/
+			accuracy[i] = (NUMBER_OF_TESTING - mc_tm_evaluate(mc_tsetlin_machine, X_test, y_test, NUMBER_OF_TESTING)) / NUMBER_OF_TESTING;
 
-		// printf("Average accuracy: %f\n", average/(i+1));
-		total_error += total_error;
+			if (accuracy[i] > max_accuracy)
+			{
+				max_accuracy = accuracy[i];
+				max_epoch_index = i;
+				write_file(mc_tsetlin_machine);
+			}
+			printf("Epoch accuracy: %f\n", accuracy[i]);
+		}
 
-		// mc_tm_evaluate(mc_tsetlin_machine, X_test, y_test, NUMBER_OF_EXAMPLES);
+		// printf("The highest accuracy epoch is %d\n", max_epoch_index + 1);
 	}
-	accuracy = (500 - mc_tm_evaluate(mc_tsetlin_machine, X_test, y_test, NUMBER_OF_TESTING)) / 500;
-	printf("Average accuracy: %f\n", accuracy);
+
+	else
+	{
+		read_test();
+		for (int i = 0; i < 1; i++) // i = epoch number
+		{
+			printf("Loading stored epoch......\n");
+
+			load_epoch(mc_tsetlin_machine);
+
+			printf("Loading Successfully!\n");
+			// mc_tm_initialize(mc_tsetlin_machine);
+			//  clock_t start_total = clock();
+			printf("Testing Epoch: \n");
+			/*
+			clock_t end_total = clock();
+			double time_used = ((double) (end_total - start_total)) / CLOCKS_PER_SEC;
+
+			printf("EPOCH %d TIME: %f\n", i+1, time_used);
+			*/
+
+			accuracy[i] = (NUMBER_OF_TESTING - mc_tm_evaluate(mc_tsetlin_machine, X_test, y_test, NUMBER_OF_TESTING)) / NUMBER_OF_TESTING;
+
+			printf("Testing Average accuracy: %f\n", accuracy[i]);
+		}
+	}
+
+	// printf("The highest accuracy epoch is %d\n", max_epoch_index + 1);
+
 	return 0;
 }
