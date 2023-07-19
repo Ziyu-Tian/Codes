@@ -1,12 +1,12 @@
-%{
+
 c=imread('c.jpg');
 c=rgb2gray(c);
 [m,n]=size(c);
 p=edge(c,'sobel');
 figure(2);
 imshow(p);
-pause(100);
-%}
+pause(1);
+
 Fs = 8192;
 x1 = [5 5 6 5 8 7 ];
 x2 = [0.5 0.5 1 1 1 2 ];
@@ -46,6 +46,7 @@ for i = 1:6
     n=0.5;
     pause(n);
 end
+
 
 
  

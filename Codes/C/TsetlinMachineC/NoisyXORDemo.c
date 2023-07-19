@@ -6,8 +6,8 @@
 #include <string.h>
 #include <math.h>
 
-#define NUMBER_OF_EXAMPLES 100
-#define NUMBER_OF_TESTING 50
+#define NUMBER_OF_EXAMPLES 54
+#define NUMBER_OF_TESTING 48
 
 int X_train[NUMBER_OF_EXAMPLES][FEATURES];
 int y_train[NUMBER_OF_EXAMPLES];
@@ -21,7 +21,7 @@ void read_file(void)
 	char *line = NULL;
 	size_t len = 0;
 
-	const char *s = " ";
+	const char *s = ",";
 	char *token = NULL;
 
 	fp = fopen("NoisyXORTrainingData.txt", "r");
@@ -118,7 +118,7 @@ void read_test(void)
 	char *line = NULL;
 	size_t len = 0;
 
-	const char *s = " ";
+	const char *s = ",";
 	char *token = NULL;
 	fp = fopen("FullTestData.txt", "r");
 	if (fp == NULL)
