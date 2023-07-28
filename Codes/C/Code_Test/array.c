@@ -8,18 +8,18 @@ struct Pair
 
 int main()
 {
-    struct Pair pairs[25];
-    int sensitivity = 1;
-    int threshold = 1;
-    for (int i = 0; i < 25; i++)
+    struct Pair pairs[100];
+    int sensitivity = 5;
+    int threshold = 5;
+    for (int i = 0; i < 100; i++)
     {
         
-        if ((i+1)%5==0)
+        if ((i+1)%10==0)
         {
             pairs[i].s = sensitivity;
-            sensitivity++;
+            sensitivity+=5;
             pairs[i].t = threshold; 
-            threshold = 1;
+            threshold=5;
 
         }
         else
@@ -27,13 +27,13 @@ int main()
             pairs[i].s = sensitivity;
            
             pairs[i].t = threshold; 
-            threshold++;
+            threshold+=5;
         }
         
         
        
     }
-    for (int i = 0; i < 25; i++)
+    for (int i = 0; i < 100; i++)
     {
         printf("Pair %d: s = %d t = %d\n", i + 1, pairs[i].s, pairs[i].t);
 
