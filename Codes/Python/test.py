@@ -3,16 +3,16 @@ import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
 
-#y = pd.read_csv('output_data.csv',usecols=['accuracy'])
-#y = np.array(y)
+y = pd.read_csv('output_data.csv',usecols=['accuracy']) #reding accuracy
+y = np.array(y) 
 
 
-x1 = [i for i in range(1, 101)]
+x1 = [i for i in range(1, 101)] # x1 for 1 to 100
 x1 = np.array(x1)
 
 
 
-y1 = x1 # y1 = y
+y1 = y # input data of accuracy 
 
 plt.plot(x1, y1, color='blue')
 plt.scatter(x1, y1, color = 'b')
@@ -24,8 +24,8 @@ plt.yticks(fontsize=9)
 plt.gca().xaxis.set_major_locator(ticker.MultipleLocator(base=1))  
 plt.xticks(rotation=45)  
 
-plt.xlabel('X Axis 1')
-plt.ylabel('Parameter 1 Values', color='blue')
+plt.xlabel('(T,s) value',color = 'blue', fontsize=20)
+plt.ylabel('Accuracy', color='blue', fontsize=20)
 
 global_max_index = np.argmax(y1)
 global_max_x = x1[global_max_index]
@@ -37,9 +37,9 @@ local_max_x = x1[local_max_indices]
 local_max_y = y1[local_max_indices]
 
 # 标注全局最大值和局部最大值
-plt.scatter(global_max_x, global_max_y, color='red', label='全局最大值', zorder=5)
-plt.scatter(local_max_x, local_max_y, color='green', label='局部最大值', zorder=5)
 
+plt.scatter(local_max_x, local_max_y, color='green', label='Local Max', zorder=5)
+plt.scatter(global_max_x, global_max_y, color='red', label='Global Max', zorder=5)
 
 plt.grid(axis = 'both')
 plt.tight_layout()
