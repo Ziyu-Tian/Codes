@@ -135,6 +135,7 @@ int main(void)
 
 		float accuracy[EPOCH_NUMBER] = {0};
 		float max_accuracy = 0.0;
+		float sum = 0.0;
 			
 		for (int i = 0; i < EPOCH_NUMBER; i++) // i = epoch number
 		{
@@ -143,16 +144,13 @@ int main(void)
 		
 			accuracy[i] = (NUMBER_OF_TESTING - mc_tm_evaluate(mc_tsetlin_machine, X_test, y_test, NUMBER_OF_TESTING)) / NUMBER_OF_TESTING;
 			
-			if (accuracy[i] > max_accuracy)
-			{
-				max_accuracy = accuracy[i];
-				
-			
-			}
+			sum += accuracy[i];
 
 			printf("Epoch %d finished\n",i);
 
 		}
+
+		max_accuracy = sum / EPOCH_NUMBER;
 
 		printf("T:%d s:%d Max accuracy: %f\n", threshold, sensitivity, max_accuracy);
 

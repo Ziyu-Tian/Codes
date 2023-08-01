@@ -1,5 +1,5 @@
-NoisyXORDemo: MultiClassTsetlinMachine.c MultiClassTsetlinMachine.h TsetlinMachine.c TsetlinMachine.h NoisyXORDemo.c
-	gcc -W  -O3 -ffast-math -o c NoisyXORDemo.c MultiClassTsetlinMachine.c TsetlinMachine.c 
+Demo: MultiClassTsetlinMachine.c MultiClassTsetlinMachine.h TsetlinMachine.c TsetlinMachine.h Demo.c
+	gcc -W  -O3 -ffast-math -o a Demo.c MultiClassTsetlinMachine.c TsetlinMachine.c 
 
 clean:
-	rm *.o NoisyXORDemo
+	rm *.o Demo
