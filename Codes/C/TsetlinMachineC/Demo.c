@@ -24,7 +24,7 @@ void read_file(void)
 	const char *s = ",";
 	char *token = NULL;
 
-	fp = fopen("train.txt", "r");
+	fp = fopen("train.csv", "r");
 	if (fp == NULL)
 	{
 		printf("Error opening\n");
@@ -51,7 +51,7 @@ void read_file(void)
 		y_train[i] = round(atoi(token));
 	}
 
-	fp = fopen("NoisyXORTestData.txt", "r");
+	fp = fopen("test.csv", "r");
 	if (fp == NULL)
 	{
 		printf("Error opening\n");
@@ -120,7 +120,7 @@ void read_test(void)
 
 	const char *s = ",";
 	char *token = NULL;
-	fp = fopen("FullTestData.txt", "r");
+	fp = fopen("test.csv", "r");
 	if (fp == NULL)
 	{
 		printf("Error opening\n");
@@ -198,10 +198,11 @@ int main(void)
 
 	if (mode_select == 1) // Training-mode of Tsetlin machine
 	{
-		float max_accuracy = 0.0;
-		int max_epoch_index = 1;
+		float average_accuracy = 0.0;
+		//int max_epoch_index = 1;
 		printf("Training Start......\n");
 		printf("------------------------------\n");
+		float num = 0.0;
 		for (int i = 0; i < 10; i++) // i = epoch number
 		{
 			mc_tm_initialize(mc_tsetlin_machine);
@@ -217,14 +218,23 @@ int main(void)
 			*/
 			accuracy[i] = (NUMBER_OF_TESTING - mc_tm_evaluate(mc_tsetlin_machine, X_test, y_test, NUMBER_OF_TESTING)) / NUMBER_OF_TESTING;
 
+			/*
 			if (accuracy[i] > max_accuracy)
 			{
 				max_accuracy = accuracy[i];
 				max_epoch_index = i;
 				write_file(mc_tsetlin_machine);
 			}
-			printf("Epoch accuracy: %f\n", accuracy[i]);
+			*/
+			//printf("Epoch accuracy: %f\n", accuracy[i]);
+			num += accuracy[i];
 		}
+
+
+		average_accuracy = num / 10;
+
+		printf("Average Epoch accuracy: %f\n", average_accuracy);
+
 
 		// printf("The highest accuracy epoch is %d\n", max_epoch_index + 1);
 	}

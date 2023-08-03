@@ -14,8 +14,8 @@ def merge_csv_files(input_files, output_file):
                     writer.writerow(row)
 
 if __name__ == "__main__":
-    input_files = ["mnist_train.csv", "mnist_test.csv"]  # 输入要合并的CSV文件列表
-    output_file = "train_test.csv"          # 合并后的输出文件
+    input_files = ["mnist_train.csv", "mnist_test.csv"]  
+    output_file = "train_test.csv"          
 
     merge_csv_files(input_files, output_file)
 
