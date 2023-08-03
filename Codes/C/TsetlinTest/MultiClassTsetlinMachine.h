@@ -27,7 +27,7 @@ https://arxiv.org/abs/1804.01508
 
 #include "TsetlinMachine.h"
 
-#define CLASSES 2
+#define CLASSES 10
 
 
 

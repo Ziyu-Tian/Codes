@@ -6,10 +6,10 @@
 #include <string.h>
 #include <math.h>
 
-#define NUMBER_OF_EXAMPLES 455
-#define NUMBER_OF_TESTING 114
-#define EPOCH_NUMBER 100
-#define batch 200
+#define NUMBER_OF_EXAMPLES 60000
+#define NUMBER_OF_TESTING 10000
+#define EPOCH_NUMBER 10
+#define batch 12
 
 int X_train[NUMBER_OF_EXAMPLES][FEATURES];
 int y_train[NUMBER_OF_EXAMPLES];
