@@ -6,8 +6,8 @@
 #include <string.h>
 #include <math.h>
 
-#define NUMBER_OF_EXAMPLES 60000
-#define NUMBER_OF_TESTING 10000
+#define NUMBER_OF_EXAMPLES 500
+#define NUMBER_OF_TESTING 100
 #define EPOCH_NUMBER 10
 #define batch 12
 
