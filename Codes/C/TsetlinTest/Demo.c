@@ -8,8 +8,8 @@
 
 #define NUMBER_OF_EXAMPLES 500
 #define NUMBER_OF_TESTING 100
-#define EPOCH_NUMBER 10
-#define batch 12
+#define EPOCH_NUMBER 5
+#define batch 5
 
 int X_train[NUMBER_OF_EXAMPLES][FEATURES];
 int y_train[NUMBER_OF_EXAMPLES];
@@ -100,7 +100,7 @@ int main(void)
 
         struct Pair pairs[100];
 
-	for(int i = 0; i<100; i++)
+	for(int i = 0; i<5; i++)
 	{
 		if ((i+1)%10==0)
         	{
