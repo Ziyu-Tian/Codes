@@ -100,7 +100,7 @@ int main(void)
 
         struct Pair pairs[100];
 
-	for(int i = 0; i<5; i++)
+	for(int i = 0; i<100; i++)
 	{
 		if ((i+1)%10==0)
         	{
@@ -146,13 +146,15 @@ int main(void)
 			
 			sum += accuracy[i];
 
-			printf("Epoch %d finished\n",i);
+			printf("Epoch %d finished ",i);
+			printf("Accuracy: %f\n", accuracy[i]);
+
 
 		}
 
 		max_accuracy = sum / EPOCH_NUMBER;
 
-		printf("T:%d s:%d Max accuracy: %f\n", threshold, sensitivity, max_accuracy);
+		printf("T:%d s:%d Accuracy: %f\n", threshold, sensitivity, max_accuracy);
 
 		FILE *fp = fopen("output_data.csv", "a+");//if need another file, change the file name
     		if (fp == NULL)

@@ -140,11 +140,11 @@ void mc_tm_fit(struct MultiClassTsetlinMachine *mc_tm, int X[][FEATURES], int y[
 	{
 		// Add shuffling here...
 
-		printf("Batch %d\n", epoch + 1);
-		printf("------------------\n");
+		//printf("Batch %d\n", epoch + 1);
+		//printf("------------------\n");
 		for (int i = 0; i < number_of_examples; i++)
 		{
-			printf("Example %d :\t", i + 1);
+			//printf("Example %d :\t", i + 1);
 			mc_tm_update(mc_tm, X[i], y[i], s);
 
 			if ((int)mc_tm_evaluate(mc_tm, X, y, 1) == 1)
@@ -152,7 +152,7 @@ void mc_tm_fit(struct MultiClassTsetlinMachine *mc_tm, int X[][FEATURES], int y[
 				errors += 1;
 			}
 			accuracy = 1 - ((float)errors / (i + 1 + number_of_examples * (epoch)));
-			printf("Accuracy: %f\n", accuracy);
+			//printf("Accuracy: %f\n", accuracy);
 		}
 	}
 }
