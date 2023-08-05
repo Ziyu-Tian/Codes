@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 import csv
 from binarizer import StandardBinarizer
+
+# Merge train.csv and test.csv
 """
 def merge_csv_files(input_files, output_file):
     with open(output_file, 'w', newline='') as outfile:
@@ -20,47 +22,15 @@ if __name__ == "__main__":
     merge_csv_files(input_files, output_file)
 
 
-x = pd.read_csv('train_test.csv',usecols=range(1,784))
-y = pd.read_csv('train_test.csv',usecols=['label'])
-
-
-x_train = x.iloc[1:60000, 1:784]
-x_test = x.iloc[60001:70001, 1:784]
-
-y_train = x.iloc[1:60000, 0]
-y_test = x.iloc[60001:70001, 0]
-
-x_train = np.array(x_train)
-x_test = np.array(x_test)
-
-y_train = np.array(y_train)
-y_test = np.array(y_test)
-
-
-#print(x)
-binarizer = StandardBinarizer(max_bits_per_feature=5)
-binarizer.fit(x)
-
-x_train = binarizer.transform(x_train)
-x_train= np.hstack((x_train,y_train))
-x_train = x_train.astype(int)
-np.savetxt("train.csv",x_train,delimiter=',',fmt='%d')
-
-binarizer.fit(x_test)
-
-x = binarizer.transform(x)
-#x = np.hstack((x,y))
-x = x.astype(int)
-np.savetxt("test1.csv",x,delimiter=',',fmt='%d')
 """
-x = pd.read_csv('train_test.csv',usecols=range(1, 784))
-y = pd.read_csv('train_test.csv',usecols=['label'])
+x = pd.read_csv('pca_testing.csv',usecols=range(0,263),header= None)
+y = pd.read_csv('train.csv',usecols=[3462],header= None)
 x = np.array(x)
 y = np.array(y)
-#print(x)
+
 binarizer = StandardBinarizer(max_bits_per_feature=5)
 binarizer.fit(x)
 x = binarizer.transform(x)
-x = np.hstack((x,y))
+x = np.hstack((x,y)) # combine the label-y in the last col of x
 x = x.astype(int)
 np.savetxt("output.csv",x,delimiter=',',fmt='%d')

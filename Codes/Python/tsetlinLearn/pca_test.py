@@ -2,30 +2,34 @@ import pandas as pd
 import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.datasets import fetch_openml
+import csv
+from binarizer import StandardBinarizer
 x = pd.read_csv('train.csv',usecols=range(0, 3461),header = None)
+x = np.array(x) 
 
-X = np.array(x) 
 
+"""
 pca = PCA(0.95)
 
-pca.fit(X)
+pca.fit(x)
 
 PCA(n_components=0.95)
 
 num = pca.n_components_
-"""
+
 print(num)
+
 """
 
-n_components = num
-pca = PCA(n_components=n_components)
+pca = PCA(n_components=264)
 
-X_pca = pca.fit_transform(X)
+X_pca = pca.fit_transform(x)
 
-print(X_pca)
-print(X_pca.shape)
+X_pca = np.array(X_pca)
 
-#print(pca.explained_variance_ratio_)
+np.savetxt("pca_testing.csv",X_pca,delimiter=',',fmt='%d')
+
+
 
 
 
