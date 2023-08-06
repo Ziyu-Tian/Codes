@@ -121,7 +121,7 @@ int main(void)
 	printf("(T,s) pairs setting finished!\n");
 		
 	
-	for (int k = 29; k<100; k++ ) // loop of change hyper-paramter pair (s,T)
+	for (int k = 87; k<100; k++ ) // loop of change hyper-paramter pair (s,T)
 	{
 		sensitivity = pairs[k].s;
 		threshold = pairs[k].t;
