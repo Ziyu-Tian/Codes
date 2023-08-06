@@ -85,7 +85,7 @@ int main(void)
 {
 	printf("Training Start......\n");
 	printf("------------------------------\n");
-
+        /*
 	FILE *fp = fopen("output_data.csv", "w+");//if need another file, change the file name
     	if (fp == NULL)
        	{
@@ -97,7 +97,7 @@ int main(void)
     	fclose(fp);
         
 	printf("Title Written Successfully!\n");
-
+   	*/
         struct Pair pairs[100];
 
 	for(int i = 0; i<100; i++)
@@ -121,7 +121,7 @@ int main(void)
 	printf("(T,s) pairs setting finished!\n");
 		
 	
-	for (int k = 0; k<100; k++ ) // loop of change hyper-paramter pair (s,T)
+	for (int k = 29; k<100; k++ ) // loop of change hyper-paramter pair (s,T)
 	{
 		sensitivity = pairs[k].s;
 		threshold = pairs[k].t;
