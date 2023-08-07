@@ -54,10 +54,18 @@ X_pca = np.array(X_pca)
 
 np.savetxt("pca.csv",X_pca,delimiter=',',fmt='%d')
 
+"""
+
 
 # Binarizer 
 
-x = pd.read_csv('pca.csv',header=None)
+x = pd.read_csv('train_test.csv',header=None)
+
+#
+Col = x.shape[1]
+x = pd.read_csv('train_test.csv',usecols=range(1, Col),header=None)
+y = pd.read_csv('train_test.csv',usecols=[0],header=None)
+#
 
 x = np.array(x)
 
@@ -70,7 +78,6 @@ print(x.shape[1])
 print(x.shape[0])
 np.savetxt("output.csv",x,delimiter=',',fmt='%d')
 
-"""
 
 # Split into train and test 
 
