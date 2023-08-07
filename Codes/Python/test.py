@@ -24,7 +24,7 @@ plt.yticks(fontsize=9)
 plt.gca().xaxis.set_major_locator(ticker.MultipleLocator(base=1))  
 plt.xticks(rotation=45)  
 
-plt.xlabel('(T,s) value',color = 'blue', fontsize=20)
+plt.xlabel('(s,T) value',color = 'blue', fontsize=20)
 plt.ylabel('Accuracy', color='blue', fontsize=20)
 
 global_max_index = np.argmax(y1)
