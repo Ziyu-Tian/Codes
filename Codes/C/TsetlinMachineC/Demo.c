@@ -6,8 +6,8 @@
 #include <string.h>
 #include <math.h>
 
-#define NUMBER_OF_EXAMPLES 455
-#define NUMBER_OF_TESTING 114
+#define NUMBER_OF_EXAMPLES 60000
+#define NUMBER_OF_TESTING 10
 
 int X_train[NUMBER_OF_EXAMPLES][FEATURES];
 int y_train[NUMBER_OF_EXAMPLES];
@@ -203,13 +203,13 @@ int main(void)
 		printf("Training Start......\n");
 		printf("------------------------------\n");
 		float num = 0.0;
-		for (int i = 0; i < 10; i++) // i = epoch number
+		for (int i = 0; i < 1; i++) // i = epoch number
 		{
 			mc_tm_initialize(mc_tsetlin_machine);
 			// clock_t start_total = clock();
 			
 			printf("Epoch %d: \n", i + 1);
-			mc_tm_fit(mc_tsetlin_machine, X_train, y_train, NUMBER_OF_EXAMPLES, 12, 30); // 200
+			mc_tm_fit(mc_tsetlin_machine, X_train, y_train, NUMBER_OF_EXAMPLES, 100, 50); // 200
 			/*
 			clock_t end_total = clock();
 			double time_used = ((double) (end_total - start_total)) / CLOCKS_PER_SEC;
@@ -231,7 +231,7 @@ int main(void)
 		}
 
 
-		average_accuracy = num / 10;
+		average_accuracy = num ;
 
 		printf("Average Epoch accuracy: %f\n", average_accuracy);
 
