@@ -4,7 +4,7 @@ import csv
 #from sklearn.decomposition import PCA
 #from sklearn.datasets import fetch_openml
 from binarizer import StandardBinarizer
-
+"""
 def merge_csv_files(input_files, output_file): # function to merge two csv file 
     with open(output_file, 'w', newline='') as outfile:
         writer = csv.writer(outfile)
@@ -22,7 +22,7 @@ input_file = ["mnist_train.csv","mnist_test.csv"]
 output_file = "train_test.csv"
 
 merge_csv_files(input_file,output_file)
-"""
+
 
 # PCA Process 
 
