@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
 import csv
-from sklearn.decomposition import PCA
-from sklearn.datasets import fetch_openml
+#from sklearn.decomposition import PCA
+#from sklearn.datasets import fetch_openml
 from binarizer import StandardBinarizer
-"""
+
 def merge_csv_files(input_files, output_file): # function to merge two csv file 
     with open(output_file, 'w', newline='') as outfile:
         writer = csv.writer(outfile)
@@ -22,7 +22,7 @@ input_file = ["mnist_train.csv","mnist_test.csv"]
 output_file = "train_test.csv"
 
 merge_csv_files(input_file,output_file)
-
+"""
 
 # PCA Process 
 
@@ -69,7 +69,7 @@ y = pd.read_csv('train_test.csv',usecols=[0],header=None)
 
 x = np.array(x)
 
-binarizer = StandardBinarizer(max_bits_per_feature=5)
+binarizer = StandardBinarizer(max_bits_per_feature=1)
 binarizer.fit(x)
 x = binarizer.transform(x)
 x = np.hstack((x,y)) # combine the label-y in the last col of x
