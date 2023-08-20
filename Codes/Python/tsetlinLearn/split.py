@@ -1,12 +1,12 @@
 import pandas as pd
 
-df = pd.read_csv('output.csv',header=None)
+df = pd.read_csv('binary_bc.csv',header=None)
 
-part1 = df.iloc[:500]
-part2 = df.iloc[60000:60100]
+part1 = df.iloc[:455]
+part2 = df.iloc[455:569]
 
-part1.to_csv('train.csv',index = False, header=None)
-part2.to_csv('test.csv', index = False, header=None)
+part1.to_csv('bc_train.csv',index = False, header=None)
+part2.to_csv('bc_test.csv', index = False, header=None)
 
 
 

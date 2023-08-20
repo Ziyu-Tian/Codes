@@ -6,10 +6,10 @@
 #include <string.h>
 #include <math.h>
 
-#define NUMBER_OF_EXAMPLES 500
-#define NUMBER_OF_TESTING 100
-#define EPOCH_NUMBER 5
-#define batch 5
+#define NUMBER_OF_EXAMPLES 455
+#define NUMBER_OF_TESTING 114
+#define EPOCH_NUMBER 3
+#define batch 100
 
 int X_train[NUMBER_OF_EXAMPLES][FEATURES];
 int y_train[NUMBER_OF_EXAMPLES];
@@ -17,10 +17,10 @@ int y_train[NUMBER_OF_EXAMPLES];
 int X_test[NUMBER_OF_EXAMPLES][FEATURES];
 int y_test[NUMBER_OF_EXAMPLES];
 int threshold = 5;
-int sensitivity = 5;
+float sensitivity = 3;
 struct Pair // (s,T) pairs
 {
-	int s;
+	float s;
 	int t;
 };
 
@@ -33,7 +33,7 @@ void read_file(void)
 	const char *s = ",";
 	char *token = NULL;
 
-	fp = fopen("train.csv", "r");
+	fp = fopen("/Users/ziyutian/Codes/Codes/Python/tsetlinLearn/bc_train.csv", "r");
 	if (fp == NULL)
 	{
 		printf("Error opening\n");
@@ -60,7 +60,7 @@ void read_file(void)
 		y_train[i] = round(atoi(token));
 	}
 
-	fp = fopen("test.csv", "r");
+	fp = fopen("/Users/ziyutian/Codes/Codes/Python/tsetlinLearn/bc_test.csv", "r");
 	if (fp == NULL)
 	{
 		printf("Error opening\n");
@@ -85,7 +85,7 @@ int main(void)
 {
 	printf("Training Start......\n");
 	printf("------------------------------\n");
-        /*
+        
 	FILE *fp = fopen("output_data.csv", "w+");//if need another file, change the file name
     	if (fp == NULL)
        	{
@@ -97,7 +97,7 @@ int main(void)
     	fclose(fp);
         
 	printf("Title Written Successfully!\n");
-   	*/
+   	
         struct Pair pairs[100];
 
 	for(int i = 0; i<100; i++)
@@ -105,7 +105,7 @@ int main(void)
 		if ((i+1)%10==0)
         	{
             		pairs[i].s = sensitivity;
-            		sensitivity+=5;
+            		sensitivity+=0.5;
            		pairs[i].t = threshold; 
             		threshold=5;
        		 }
@@ -121,7 +121,7 @@ int main(void)
 	printf("(T,s) pairs setting finished!\n");
 		
 	
-	for (int k = 87; k<100; k++ ) // loop of change hyper-paramter pair (s,T)
+	for (int k = 0; k<100; k++ ) // loop of change hyper-paramter pair (s,T)
 	{
 		sensitivity = pairs[k].s;
 		threshold = pairs[k].t;
@@ -154,7 +154,7 @@ int main(void)
 
 		max_accuracy = sum / EPOCH_NUMBER;
 
-		printf("T:%d s:%d Accuracy: %f\n", threshold, sensitivity, max_accuracy);
+		printf("T:%d s:%f Accuracy: %f\n", threshold, sensitivity, max_accuracy);
 
 		FILE *fp = fopen("output_data.csv", "a+");//if need another file, change the file name
     		if (fp == NULL)
@@ -163,7 +163,7 @@ int main(void)
         		exit(EXIT_FAILURE);
     		}
 
-    		fprintf(fp, "%d,%d,%f\n", threshold, sensitivity, max_accuracy);
+    		fprintf(fp, "%d,%f,%f\n", threshold, sensitivity, max_accuracy);
 
     		fclose(fp);
 	
