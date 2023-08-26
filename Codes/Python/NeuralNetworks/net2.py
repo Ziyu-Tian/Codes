@@ -1,6 +1,11 @@
 import random
 import mnist_loader
 import numpy as np
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import OneHotEncoder
+
 
 class Network(object):
     # 'sizes' is a list as [2,3,1] with the num of each layers neuron
@@ -119,10 +124,50 @@ def sigmoid_prime(z):
     """Derivative of the sigmoid function."""
     return sigmoid(z)*(1-sigmoid(z))
 
-
+"""
 training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
 
 
-net = Network([784, 30, 10])
+training_data = list(training_data)
+validation_data = list(validation_data)
+test_data = list(test_data)"""
+
+
+
+# Load the Iris dataset
+iris = load_iris()
+X = iris.data  # Features
+y = iris.target  # Labels
+
+#y_reshaped = y.reshape(-1, 1)
+
+scaler = MinMaxScaler(feature_range=(0, 1))
+
+encoder = OneHotEncoder(sparse=False)
+
+#y_onehot = encoder.fit_transform(y_reshaped)
+
+X_scaled = scaler.fit_transform(X)
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+
+# Combine features and labels into tuples and store them in training_data
+training_data = zip(X_train, y_train)
+
+
+test_data = zip(X_test, y_test)
+
+
+net = Network([4, 30, 3])
 
 net.SGD(training_data, 30, 10, 3.0, test_data=test_data)
+
+
+"""
+for x, y in test_data[:5]:
+    print("Input Feature (x):")
+    print(x)
+    print("Label (y):")
+    print(y)
+    print("="*20)"""
