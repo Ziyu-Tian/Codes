@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
 
 """
-x = pd.read_csv('train_test.csv',usecols=range(1,783),header= None)
+x = pd.read_csv('/Users/ziyutian/Downloads/Datasets/Fashion_mnist/train_test.csv',usecols=range(1,783),header= None)
 y = pd.read_csv('train_test.csv',usecols=[0],header=None)
 x = np.array(x)
 y = np.array(y)
