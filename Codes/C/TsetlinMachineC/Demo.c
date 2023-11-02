@@ -6,8 +6,8 @@
 #include <string.h>
 #include <math.h>
 
-#define NUMBER_OF_EXAMPLES 60000
-#define NUMBER_OF_TESTING 10
+#define NUMBER_OF_EXAMPLES 4
+#define NUMBER_OF_TESTING 4
 
 int X_train[NUMBER_OF_EXAMPLES][FEATURES];
 int y_train[NUMBER_OF_EXAMPLES];
