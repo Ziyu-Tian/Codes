@@ -2,7 +2,7 @@ clear;clc;close all;
 
 
 % 读取音频文件
-filename = '/Users/ziyutian/Downloads/Year_3/AM files 2023/Tian Gao.wav';
+filename = 'Ziyu Tian.wav';
 [y, Fs] = audioread(filename);
 
 % 计算音频时长
