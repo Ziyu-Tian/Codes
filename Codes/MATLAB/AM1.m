@@ -1,15 +1,15 @@
 clear;clc;close all;
 
 
-% 读取音频文件
+% Read wav file
 filename = 'Ziyu Tian.wav';
 [y, Fs] = audioread(filename);
 
-% 计算音频时长
+% Calculate soundtrack duation time
 duration = length(y) / Fs;
 
-%{
-% 时域图像
+
+% Time Domain
 time = linspace(0, duration, length(y));
 figure;
 subplot(2, 1, 1);
@@ -18,20 +18,65 @@ title('Time Domain');
 xlabel('Time (s)');
 ylabel('Amplitude');
 
-%}
 
+% Frequency Domain
 
+n = length(y); % Use length of sound as FFT points, which meet the requirement of frequency resolution
+N = pow2(nextpow2(n));
 
-% 频域图像
-N = length(y);
 frequencies = linspace(0, Fs, N);
-Y = fft(y);
-amplitude = abs(Y)/N;
+frequencies = frequencies / 1000; % Change unit to kHz
+y_padded = [y; zeros(N - n, 1)];  % Zero-padding to match N
+Y = fft(y_padded);
+
+% Amplitude Normalization 
+amplitude = abs(Y)/N; 
+% Amplotude Scaling to dB
+amplitude_dB = 20 * log10(amplitude); 
 subplot(2, 1, 2);
-plot(frequencies(1:N/2), amplitude(1:N/2));
+% According to Nyquist Limit, a half frequencies are enough
+plot(frequencies(1:N/2), amplitude_dB(1:N/2),'b'); 
+hold on;
+% Hamming Windows applied 
+window = hamming(N);
+Y_windowed = fft(y_padded .* window);
+amplitude_windowed = abs(Y_windowed) / N;
+amplitude_windowed_dB = 20 * log10(amplitude_windowed);
+plot(frequencies(1:N/2), amplitude_windowed_dB(1:N/2),'r');
 title('Frequency Domain');
-xlabel('Frequency(Hz)');
-ylabel('Amplitude');
+xlabel('Frequency(kHz)');
+ylabel('Amplitude (dB)');
+legend('Original Signal', 'Hamming Processed Signal');
 
 
-% 为图像添加标签和标题
+
+%{
+
+
+% 对数幅度缩放（dB）
+amplitude_dB = 20 * log10(amplitude);
+
+% 应用 Hamming 窗以控制频谱泄漏
+window = hanning(N);
+Y_windowed = fft(y .* window);
+amplitude_windowed = abs(Y_windowed) / N;
+amplitude_windowed_dB = 20 * log10(amplitude_windowed);
+
+% 绘制原始和窗函数后的频域
+figure;
+subplot(2, 1, 1);
+plot(frequencies(1:N/2), amplitude_dB(1:N/2),'b');
+hold on;
+title('Frequency Domain (Original)');
+xlabel('Frequency (kHz)');
+ylabel('Amplitude (dB)');
+
+%subplot(2, 1, 2);
+plot(frequencies(1:N/2), amplitude_windowed_dB(1:N/2),'r');
+hold off;
+title('Frequency (After Hamming Window)');
+xlabel('Frequency (kHz)');
+ylabel('Amplitude (dB)');
+
+
+%}
