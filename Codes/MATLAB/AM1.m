@@ -47,36 +47,3 @@ title('Frequency Domain');
 xlabel('Frequency(kHz)');
 ylabel('Amplitude (dB)');
 legend('Original Signal', 'Hamming Processed Signal');
-
-
-
-%{
-
-
-% 对数幅度缩放（dB）
-amplitude_dB = 20 * log10(amplitude);
-
-% 应用 Hamming 窗以控制频谱泄漏
-window = hanning(N);
-Y_windowed = fft(y .* window);
-amplitude_windowed = abs(Y_windowed) / N;
-amplitude_windowed_dB = 20 * log10(amplitude_windowed);
-
-% 绘制原始和窗函数后的频域
-figure;
-subplot(2, 1, 1);
-plot(frequencies(1:N/2), amplitude_dB(1:N/2),'b');
-hold on;
-title('Frequency Domain (Original)');
-xlabel('Frequency (kHz)');
-ylabel('Amplitude (dB)');
-
-%subplot(2, 1, 2);
-plot(frequencies(1:N/2), amplitude_windowed_dB(1:N/2),'r');
-hold off;
-title('Frequency (After Hamming Window)');
-xlabel('Frequency (kHz)');
-ylabel('Amplitude (dB)');
-
-
-%}
