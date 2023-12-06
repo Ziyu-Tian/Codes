@@ -17,8 +17,7 @@ y1 = [y; zeros(N - n, 1)];
 y1 = y1 .* window;
 
 
-m = 2;
-[b1, a1] = butter(m, [fp1, fp2]/(fs/2), 'bandpass');
+[b1, a1] = butter(2, [fp1, fp2]/(fs/2), 'bandpass');
 b = [0.0000273 0 -0.00005461 0 0.0000273];  % numerator coefficients for IIR filter
 a = [1.0077 -0.77 1.455 -0.598 0.5776];  % denominator coefficients for IIR filter
 
@@ -33,13 +32,13 @@ mixed_signal2 = xf_IIR_function.* lo_signal2;
 frequencies = linspace(0, Fs, N);
 frequencies = frequencies / 1000; % Change unit to kHz
 
-Fc = (4000+500)/Fs; 
-
-
-m = 20; 
+%-----------------------------------------Single-stage Version---------------------------------------
+%{
+Fc = 4000/(Fs); 
+m = 264; 
 N1 = 2*m+1;
 
-% Single Stage FIR
+tic;
 h_single_stage = zeros(1, 2*m + 1);
 for n = 1:m
     h_single_stage(n) = 2 * Fc * sin(n * 2 * pi * Fc ) / (n * 2 * pi * Fc);
@@ -49,21 +48,42 @@ h_single_stage = [fliplr(h_single_stage(1:m)) 2 * Fc h_single_stage(1:m)];
 
 w = blackman(N1)';
 h_single_stage = h_single_stage.*w;
- 
 
-%h_two_stage = conv(h_single_stage, h_single_stage);
-decimationFactor = 1;
+% Single stage convolution 
+x =mixed_signal;
 
-%{
-tic;
-signal_FIR1 = conv(h_single_stage,mixed_signal);
+y_single_stage = zeros(size(x));
+for i = 1:length(x)
+    for j = 1:length(h_single_stage)
+        if i - j + 1 > 0
+            y_single_stage(i) = y_single_stage(i) + x(i - j + 1) * h_single_stage(j);
+        end
+    end
+end
 toc;
-
-tic;
-signal_FIR_2 = conv(h_two_stage, mixed_signal);
-toc;
+% Load calculation = 264 x 96000 = 25.3 M
+% Calculation Time = 0.2342s
+%-----------------------------------------Single-stage Version End---------------------------------------
 %}
 
+%-------------------------------------------Stage-two Version-----------------------------------
+
+% Single Stage FIR
+Fc = 4000/(Fs*0.5); % transition width = 4 to 9 (5kHz), decimation factor = 2
+m = 26; 
+N1 = 2*m+1;
+tic;
+h_single_stage = zeros(1, 2*m + 1);
+for n = 1:m
+    h_single_stage(n) = 2 * Fc * sin(n * 2 * pi * Fc ) / (n * 2 * pi * Fc);
+end
+
+h_single_stage = [fliplr(h_single_stage(1:m)) 2 * Fc h_single_stage(1:m)];
+
+w = blackman(N1)';
+h_single_stage = h_single_stage.*w;
+
+% Single stage convolution 
 x =mixed_signal;
 
 y_single_stage = zeros(size(x));
@@ -75,12 +95,46 @@ for i = 1:length(x)
     end
 end
 
+% Second Stage FIR
+m2 = 66; % transition width = 4 to 5 (1kHz), decimation factor = 4
+N2 = 2*m2+1;
+Fc = 4000/(0.25*Fs);
+
+h_two_stage = zeros(1, 2*m2 + 1);
+for n = 1:m2
+    h_two_stage(n) = 2 * Fc * sin(n * 2 * pi * Fc ) / (n * 2 * pi * Fc);
+end
+
+h_two_stage = [fliplr(h_two_stage(1:m2)) 2 * Fc h_two_stage(1:m2)];
+
+w = blackman(N2)';
+h_two_stage = h_two_stage.*w;
+
+% Second Stage Convolution 
+x = y_single_stage;
+
+y_two_stage = zeros(size(x));
+for i = 1:length(x)
+    for j = 1:length(h_two_stage)
+        if i - j + 1 > 0
+            y_two_stage(i) = y_two_stage(i) + x(i - j + 1) * h_two_stage(j);
+        end
+    end
+end
+toc;
+% Load calculation = 53 x 96000 x 0.5 + 133 x 96000 x 0.25 = 5.73 M
+% Calculation Time = 0.789732s
+%-------------------------------------------Stage-two Version End-----------------------------------
+
+
+
+%y_downsampled = y_single_stage(1:newDecimationFactor:end);
+
 figure;
 pspectrum(mixed_signal,Fs) % spectrum of output signal (frequency response)
 
 figure;
-pspectrum(y_single_stage,Fs) % spectrum of output signal (frequency response)
-
+pspectrum(y_two_stage,Fs/4) % spectrum of output signal (frequency response)
 
 
 %{

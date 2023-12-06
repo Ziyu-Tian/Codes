@@ -99,11 +99,43 @@ FIR_downsampled2 = decimate(signal_FIR_2, decimationFactor);
 
 magnitude_demodulated_signal = sqrt(FIR_downsampled1.^2 + FIR_downsampled2.^2);
 
+% IIR High-pass around 10 Hz 
+
 cutoff_frequency = 10; % Adjust as needed
-[b_hp, a_hp] = butter(2, cutoff_frequency/(Fs/2), 'high');
+[b, a] = butter(2, cutoff_frequency/(Fs/2), 'high');
+
+x = magnitude_demodulated_signal;     % 生成白噪声信号（为了与默认512点FFT的pspectrum归一化）
+
+
+Order = 2;
+delay_x = zeros(Order+1,1);      % 为输入（x）创建延迟线并初始化为零
+delay_y = zeros(Order,1);        % 为输出（y）创建延迟线并初始化为零
+
+for i=1:length(x)
+    for n=Order+1:-1:2          
+        delay_x(n) = delay_x(n-1);      % 将输入延迟线向右移动1个样本（最后一个样本被忘记）
+    end
+    delay_x(1) = x(i);              % 将最新的输入样本插入到延迟线的开头
+
+    Accumulator = 0;                    % 清零累加器
+    for n=1:Order+1                     % 应用前向系数（FIR）                     
+        Accumulator = Accumulator + b(n)*delay_x(n);    % b(n)*x(i-n)
+    end
+    
+    for n=2:Order+1                       % 应用反馈系数                     
+        Accumulator = Accumulator - a(n)*delay_y(n-1);    % -a(n)*y(i-n-1)
+    end
+    pulse_IIR3(i) = Accumulator;        % 输出值
+    for n=Order:-1:2          
+        delay_y(n) = delay_y(n-1);      % 将输出延迟线向右移动1个样本（最后一个样本被忘记）
+    end
+    delay_y(1) = Accumulator;           % 将最新的输出存储到延迟线中
+end
 
 % Apply the highpass filter to remove DC offset
-dc_offset_removed_signal_hp = filter(b_hp, a_hp, magnitude_demodulated_signal);
+%dc_offset_removed_signal_hp = filter(b_hp, a_hp, magnitude_demodulated_signal);
+
+dc_offset_removed_signal_hp = pulse_IIR3;
 
 sound(dc_offset_removed_signal_hp, Fs/2);
 
@@ -121,5 +153,3 @@ t1 = linspace(0, duration, 262184);
 plot(t1(1:131092),dc_offset_removed_signal_hp,'b');
 hold on;
 plot(t,y1,'r');
-
-%}
