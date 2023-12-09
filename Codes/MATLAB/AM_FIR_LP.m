@@ -69,10 +69,10 @@ toc;
 %-------------------------------------------Stage-two Version-----------------------------------
 
 % Single Stage FIR
-Fc = 4000/(Fs*0.5); % transition width = 4 to 9 (5kHz), decimation factor = 2
-m = 26; 
-N1 = 2*m+1;
-tic;
+Fc = 4000/(0.5*Fs); % transition width = 4 to 9 (5kHz), decimation factor = 2
+m = 53; 
+N1 = 2*m+1;n  
+  tic;
 h_single_stage = zeros(1, 2*m + 1);
 for n = 1:m
     h_single_stage(n) = 2 * Fc * sin(n * 2 * pi * Fc ) / (n * 2 * pi * Fc);
@@ -96,7 +96,7 @@ for i = 1:length(x)
 end
 
 % Second Stage FIR
-m2 = 66; % transition width = 4 to 5 (1kHz), decimation factor = 4
+m2 = 132; % transition width = 4 to 5 (1kHz), decimation factor = 4
 N2 = 2*m2+1;
 Fc = 4000/(0.25*Fs);
 
