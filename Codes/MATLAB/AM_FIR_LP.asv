@@ -232,17 +232,17 @@ dc_offset_removed_signal_hp = filter(b_hp, a_hp, magnitude_demodulated_signal);
 sound(dc_offset_removed_signal_hp, Fs);
 
 figure(1);
-subplot(2,1,1);
+subplot(1,1,1);
 pspectrum(dc_offset_removed_signal_hp,Fs/4);
 title('Final Demodulated Signal in Frequency Domain');
 
-subplot(2,1,2);
+figure(2,1,2);
 plot(t,dc_offset_removed_signal_hp);
 title('Final Demodulated Signal in Time Domain');
 xlabel('Time (s)');
 ylabel('Amplitude');
 
-sound(dc_offset_removed_signal_hp(1:2620),Fs/4);
+sound(dc_offset_removed_signal_hp(1:262144),Fs/4);
 %{
 figure;
 t1 = linspace(0, duration, 262184);

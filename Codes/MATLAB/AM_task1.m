@@ -8,7 +8,6 @@ filename = 'Ziyu Tian.wav';
 % Calculate soundtrack duation time
 duration = length(y) / Fs;
 
-
 % Time Domain
 time = linspace(0, duration, length(y));
 figure;
@@ -18,9 +17,7 @@ title('Time Domain');
 xlabel('Time (s)');
 ylabel('Amplitude');
 
-
 % Frequency Domain
-
 n = length(y); % Use length of sound as FFT points, which meet the requirement of frequency resolution
 N = pow2(nextpow2(n));
 
@@ -33,6 +30,7 @@ Y = fft(y_padded);
 amplitude = abs(Y)/N; 
 % Amplotude Scaling to dB
 amplitude_dB = 20 * log10(amplitude); 
+
 subplot(2, 1, 2);
 % According to Nyquist Limit, a half frequencies are enough
 plot(frequencies(1:N/2), amplitude_dB(1:N/2),'b'); 

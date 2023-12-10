@@ -22,27 +22,51 @@ y1 = y1 .* window;
 frequencies = linspace(0, Fs, N);
 frequencies = frequencies / 1000; % Change unit to kHz
 
-m = 2;
 
-[b1, a1] = butter(m, [fp1, fp2]/(fs/2), 'bandpass');
 
-b = [0.0000273 0 -0.00005461 0 0.0000273];  % numerator coefficients for IIR filter
-a = [1.0077 -0.77 1.455 -0.598 0.5776];  % denominator coefficients for IIR filter
 
-% Frequency Response Testing
 
-x = randn(1, 262144) * sqrt(512);
+[b,a] = butter(2,[fp1,fp2]/(fs/2),'bandpass');   % Butterworth IIR Bandpass 
+
+Order = 4;
+
+%x = y1;     
+
+x = randn(1, 262144) * sqrt(512); % Generate a Random Noises with same sampling points of AM signal (N = 262144)
 x = x .* window';
 
-xf_IIR = filter(b, a, x);
+delay_x = zeros(Order+1,1);      % Create Delay Array for x and intialize with zeros (input)
+delay_y = zeros(Order,1);        % Create Delay Array for x and intialize with zeros (output)
 
-xf_IIR_function = filter(b1,a1,x);
+for i=1:length(x)
+    for n=Order+1:-1:2          
+        delay_x(n) = delay_x(n-1);      % Right-shift the delay_x Array 
+    end
+    delay_x(1) = x(i);              % Input each sample from signal x to the begining of delay_x
 
-figure(1);
-pspectrum(xf_IIR_function,Fs);
+    Accumulator = 0;                    % Clear the Accumulator until the end of x-signal
+    for n=1:Order+1                     % Calculate the result from input x                     
+        Accumulator = Accumulator + b(n)*delay_x(n);    % + b(n)*x(i-n)
+    end
+    
+    for n=2:Order+1                       % Calculate the result from output y                    
+        Accumulator = Accumulator - a(n)*delay_y(n-1);    % -a(n)*y(i-n-1)
+    end
+    pulse_IIR2(i) = Accumulator;        % Store the output data of this sample x(i)
+    for n=Order:-1:2          
+        delay_y(n) = delay_y(n-1);      % Right-shift the delay_y Array 
+    end
+    delay_y(1) = Accumulator;           % Input each sample from signal x to the begining of delay_x
+end
+
+figure(2);
+%pspectrum(pulse_IIR2(1:1780),fs)            % Output frequency spectrum 
+pspectrum(pulse_IIR2(1:262144),fs) 
+
 hold on;
-pspectrum(x,Fs);
-
+pspectrum(x,fs) 
+legend('After IIR Bandpass','Orignial');
+title('IIR BP Frequency response');
 
 % Implmentation in wav file
 
