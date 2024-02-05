@@ -6,8 +6,8 @@
 #include <string.h>
 #include <math.h>
 
-#define NUMBER_OF_EXAMPLES 22
-#define NUMBER_OF_TESTING 16
+#define NUMBER_OF_EXAMPLES 120
+#define NUMBER_OF_TESTING 30
 
 int X_train[NUMBER_OF_EXAMPLES][FEATURES];
 int y_train[NUMBER_OF_EXAMPLES];
@@ -24,7 +24,7 @@ void read_file(void)
 	const char *s = ",";
 	char *token = NULL;
 
-	fp = fopen("train.csv", "r");
+	fp = fopen("iris_train.csv", "r");
 	if (fp == NULL)
 	{
 		printf("Error opening\n");
@@ -51,7 +51,7 @@ void read_file(void)
 		y_train[i] = round(atoi(token));
 	}
 
-	fp = fopen("test.csv", "r");
+	fp = fopen("iris_test.csv", "r");
 	if (fp == NULL)
 	{
 		printf("Error opening\n");
@@ -91,7 +91,7 @@ void write_file(struct MultiClassTsetlinMachine *mc_tm)
 			{
 				int regular_state = tm_get_state(mc_tm->tsetlin_machines[k], i, j, 0);
 
-				regular_state = (regular_state > 3 )?0 : 1;
+				regular_state = (regular_state > 6 )?0 : 1;
 				fprintf(fp, "%d ", regular_state);
 			} // print regular_feature
 			for (int j = 0; j < FEATURES; j++)
@@ -100,12 +100,12 @@ void write_file(struct MultiClassTsetlinMachine *mc_tm)
 
 				if (j == FEATURES - 1)
 				{
-					negated_state = (negated_state > 3 )?0 : 1;
+					negated_state = (negated_state > 6 )?0 : 1;
 					fprintf(fp, "%d\n", negated_state);
 				}
 				else
 				{
-					negated_state = (negated_state > 3 )?0 : 1;
+					negated_state = (negated_state > 6 )?0 : 1;
 					fprintf(fp, "%d ", negated_state);
 				}
 			} // print negated_features
@@ -213,14 +213,14 @@ int main(void)
 			// clock_t start_total = clock();
 			
 			printf("Epoch %d: \n", i + 1);
-			mc_tm_fit(mc_tsetlin_machine, X_train, y_train, NUMBER_OF_EXAMPLES, 10, 30); // 200
+			mc_tm_fit(mc_tsetlin_machine, X_train, y_train, NUMBER_OF_EXAMPLES, 20, 3); // 200
 			/*
 			clock_t end_total = clock();
 			double time_used = ((double) (end_total - start_total)) / CLOCKS_PER_SEC;
 
 			printf("EPOCH %d TIME: %f\n", i+1, time_used);
 			*/
-			accuracy[i] = (NUMBER_OF_TESTING - mc_tm_evaluate(mc_tsetlin_machine, X_test, y_test, NUMBER_OF_TESTING)) / (NUMBER_OF_TESTING*10);
+			accuracy[i] = (NUMBER_OF_TESTING - mc_tm_evaluate(mc_tsetlin_machine, X_test, y_test, NUMBER_OF_TESTING)) / (NUMBER_OF_TESTING);
 
 			
 			if (accuracy[i] > max_accuracy)
@@ -230,19 +230,15 @@ int main(void)
 				write_file(mc_tsetlin_machine);
 			}
 			
-			printf("Epoch accuracy: %f\n", accuracy[i]);
+			
 			num += accuracy[i];
 			//write_file(mc_tsetlin_machine);
 			
-			average_accuracy = num ;
+			average_accuracy = num/(i+1);
 
 			printf("Average Epoch accuracy: %f\n", average_accuracy);
 		}
-
-
-
-		
-
+			printf("Max Epoch accuracy: %f\n", max_accuracy);
 
 		    printf("The highest accuracy epoch is %d\n", max_epoch_index + 1);
 	}

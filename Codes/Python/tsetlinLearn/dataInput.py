@@ -24,21 +24,21 @@ if __name__ == "__main__":
 
 
 """
-x = pd.read_csv('/Users/ziyutian/Downloads/Datasets/Fashion_mnist/train_test.csv',usecols=range(1,783),header= None)
-y = pd.read_csv('train_test.csv',usecols=[0],header=None)
+x = pd.read_csv('train_test.csv',usecols=range(0,3),header= None)
+y = pd.read_csv('train_test.csv',usecols=[4],header=None)
 x = np.array(x)
 y = np.array(y)
 
-binarizer = StandardBinarizer(max_bits_per_feature=1)
+binarizer = StandardBinarizer(max_bits_per_feature=3)
 binarizer.fit(x)
 x = binarizer.transform(x)
 
 x = np.hstack((x,y)) # combine the label-y in the last col of x
 x = x.astype(int)
-np.savetxt("binary_mnist.csv",x,delimiter=',',fmt='%d')
+np.savetxt("binary_iris.csv",x,delimiter=',',fmt='%d')
 
-"""
-csv_file_path = "binary_mnist.csv"  
+
+csv_file_path = "binary_iris.csv"  
 lines = []
 with open(csv_file_path, 'r') as csvfile:
     csvreader = csv.reader(csvfile)
@@ -54,12 +54,12 @@ with open(shuffled_csv_file_path, 'w', newline='') as csvfile:
     csvwriter = csv.writer(csvfile)
     csvwriter.writerows(lines)
 
-"""
 
-df = pd.read_csv('binary_mnist.csv',header=None)
 
-part1 = df.iloc[:60000]
-part2 = df.iloc[60000:70000]
+df = pd.read_csv('shuffled_binary_iris.csv',header=None)
 
-part1.to_csv('mnist_train.csv',index = False, header=None)
-part2.to_csv('mnist_test.csv', index = False, header=None)
+part1 = df.iloc[:120]
+part2 = df.iloc[120:150]
+
+part1.to_csv('iris_train.csv',index = False, header=None)
+part2.to_csv('iris_test.csv', index = False, header=None)
