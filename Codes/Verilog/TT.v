@@ -1,30 +1,10 @@
 
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 30.11.2023 07:05:36
-// Design Name: 
-// Module Name: TM_test
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
 
 
 module TT(
-
+    input      [1:0] features,
     input      [0:0] clk,
-    input      [0:0] rst,
-    input        
+    input      [0:0] rst,      
     output reg [1:0] final_class
 );
 
@@ -51,31 +31,17 @@ always @(posedge clk)
       ex6_reg  <= 4'b1100 ;
       ex7_reg  <= 4'b0001 ;
       ex8_reg  <= 4'b0011 ;
+      features_reg <= 2'b00;
        
     end  
 
     else begin
-        features_reg  <= 2'b11 ;  
-        end
-            
-         
+        features_reg  <= features ;
+        final_class <= class_wire;
+        end    
     end
 
-always @( posedge S_AXI_ACLK )
-    begin
-	  if ( S_AXI_ARESETN == 1'b0 )
-	    begin
-	      sum <= 0;
-	      slv_reg2 <= 0;
-	    end 
-	  else begin
-	    sum         <= slv_reg0 + slv_reg1;
-	    slv_reg2    <= sum[$high(sum)-1:0]; // lower 32 bits 
-	    slv_reg3[0] <= sum[$high(sum)];     // top carry bit
-      end
-    end
-
-Inference DUT(
+Inf DUT(
     features_reg,
     ex1_reg,
     ex2_reg,
