@@ -1,4 +1,4 @@
-module ClauseCalculation(
+module CC(
     input [2-1:0] features,
     input [4-1:0] exclude_state,
     output wire clause
