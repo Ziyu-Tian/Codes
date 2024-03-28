@@ -92,7 +92,7 @@ void write_file(struct MultiClassTsetlinMachine *mc_tm)
 				int regular_state = tm_get_state(mc_tm->tsetlin_machines[k], i, j, 0);
 
 				regular_state = (regular_state > 6 )?0 : 1;
-				fprintf(fp, "%d ", regular_state);
+				fprintf(fp, "%d", regular_state);
 			} // print regular_feature
 			for (int j = 0; j < FEATURES; j++)
 			{
@@ -106,7 +106,7 @@ void write_file(struct MultiClassTsetlinMachine *mc_tm)
 				else
 				{
 					negated_state = (negated_state > 6 )?0 : 1;
-					fprintf(fp, "%d ", negated_state);
+					fprintf(fp, "%d", negated_state);
 				}
 			} // print negated_features
 		}
@@ -123,7 +123,7 @@ void read_test(void)
 
 	const char *s = ",";
 	char *token = NULL;
-	fp = fopen("test.csv", "r");
+	fp = fopen("iris_test.csv", "r");
 	if (fp == NULL)
 	{
 		printf("Error opening\n");
@@ -244,6 +244,7 @@ int main(void)
 	}
 	else
 	{
+		clock_t start_total = clock();
 		read_test();
 		for (int i = 0; i < 1; i++) // i = epoch number
 		{
@@ -253,17 +254,19 @@ int main(void)
 
 			printf("Loading Successfully!\n");
 			// mc_tm_initialize(mc_tsetlin_machine);
-			//  clock_t start_total = clock();
+			//  
 			printf("Testing Epoch: \n");
 			/*
+			
+			*/
+			
+
+			accuracy[i] = (NUMBER_OF_TESTING - mc_tm_evaluate(mc_tsetlin_machine, X_test, y_test, NUMBER_OF_TESTING)) / NUMBER_OF_TESTING;
+
 			clock_t end_total = clock();
 			double time_used = ((double) (end_total - start_total)) / CLOCKS_PER_SEC;
 
 			printf("EPOCH %d TIME: %f\n", i+1, time_used);
-			*/
-
-			accuracy[i] = (NUMBER_OF_TESTING - mc_tm_evaluate(mc_tsetlin_machine, X_test, y_test, NUMBER_OF_TESTING)) / NUMBER_OF_TESTING;
-
 			printf("Testing Average accuracy: %f\n", accuracy[i]);
 		}
 	}
