@@ -16,7 +16,7 @@ s2 = a2*sin(2*pi*f2*t);
 s3 = s1 + s2; 
 
 s3ADC = floor(s3*(2^(ADCBits-1))); %quantise to ADC scale (assuming ADC input range is +/-1) 
-%plot(t,s3ADC,'-o'); %plot
+plot(t,s3ADC,'-o'); %plot
 xlabel('t'); 
 ylabel('ADC value'); 
 title('Quantised discrete time sinusoid (ADC values)');
@@ -29,7 +29,7 @@ Error = s3-s3a; %calculate error (quantisation noise)
 figure(3);
 pspectrum(s3a,fs);
 pause(1000);
-%{
+
 plot(t,s3a,'-o'); %plot
 xlabel('t'); 
 ylabel('Voltage'); 
@@ -39,7 +39,7 @@ hold;
 plot(t,Error,'r')
 legend('Signal','Error')
 pause(1000);
-%}
+
 
 % 
 
