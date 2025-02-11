@@ -54,7 +54,7 @@ bool timer_callback(struct repeating_timer *t) {
 
     // Output 
     printf("Encoder position: %d, Pulse count: %d\n", encoder_position, pulse_count);
-    printf("Speed: %.2f RPM, Angular velocity: %.2f rad/s\n", rpm, angular_velocity);
+    // printf("Speed: %.2f RPM, Angular velocity: %.2f rad/s\n", rpm, angular_velocity);
 
     // Counter Reset 
     pulse_count = 0;
