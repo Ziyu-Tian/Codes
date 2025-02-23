@@ -1,5 +1,6 @@
 /*
 RWC 2025 Speed Control System Test-1 - Reading Speed from encoder via GPIO directly to Pico
+PPR captured with 1200 as expected
 */
 #include <stdio.h>
 #include "pico/stdlib.h"
@@ -8,7 +9,7 @@ RWC 2025 Speed Control System Test-1 - Reading Speed from encoder via GPIO direc
 
 #define ENCODER_A 23    // GPIO Pin for Encoder A
 #define ENCODER_B 24    // GPIO Pin for Encoder B
-#define PPR 600 // Pulse per Revolution for encoder E38S6G5-600B-G24N
+#define PPR 1200 // Pulse per Revolution for encoder E38S6G5-600B-G24N
 #define SAMPLE_TIME_MS 100  // Sampling Time
 #define SHAFT_DIAMETER 6 // Shaft Diameter of encoder (mm)
 
@@ -37,7 +38,8 @@ void encoder_init() { // Interrupt triggered by Pulse
     gpio_pull_up(ENCODER_A);
     gpio_set_irq_enabled_with_callback(ENCODER_A, GPIO_IRQ_EDGE_RISE, true, &encoder_isr);
     gpio_set_irq_enabled_with_callback(ENCODER_A, GPIO_IRQ_EDGE_FALL, true, &encoder_isr);
-    // 
+    // Double Frequency with edge-detection in both edges of A
+    // Real PPR = 600 x 2 = 1200
     gpio_init(ENCODER_B);
     gpio_set_dir(ENCODER_B, GPIO_IN);
     gpio_pull_up(ENCODER_B);
@@ -53,8 +55,8 @@ bool timer_callback(struct repeating_timer *t) {
     float angular_velocity = ((float)pulse_count / PPR) * 2 * 3.1415926 / (SAMPLE_TIME_MS / 1000.0);
 
     // Output 
-    printf("Encoder position: %d, Pulse count: %d\n", encoder_position, pulse_count);
-    // printf("Speed: %.2f RPM, Angular velocity: %.2f rad/s\n", rpm, angular_velocity);
+    printf("Encoder position: %d, Pulse count: %d, RPM: %.2f\n", encoder_position, pulse_count, rpm);
+
 
     // Counter Reset 
     pulse_count = 0;
@@ -67,12 +69,8 @@ bool timer_callback(struct repeating_timer *t) {
 int main() {
     stdio_init_all();
     sleep_ms(3000);  
-
     encoder_init();  
-
-    
     struct repeating_timer timer;
-    //add_repeating_timer_ms(1000, timer_callback, NULL, &timer);
     add_repeating_timer_ms(SAMPLE_TIME_MS, timer_callback, NULL, &timer);
 
 
