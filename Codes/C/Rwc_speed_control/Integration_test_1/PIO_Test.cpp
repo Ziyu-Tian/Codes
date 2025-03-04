@@ -48,13 +48,10 @@ int main() {
     QuadratureEncoder encoder(A_pin, ppr);
 
     // Sampling Time for Speed Calculation
-    float sampling_time = 1e-3;
+    float sampling_time = 100e-3;
 
     // Digital Pot settings
-    float pid_output = 2.5; // PID (0 - 5 V, STOP - FULL SPEED)
-    float digital_pot_output = (((pid_output / 5) * 4.7) /5.0) * 255; // Map 0-5 V to 0-4.7 V
-    // then change voltage to values in 
-    int output_voltage = (int) digital_pot_output;
+    int digital_pot_output = 127; // 0 - 255 (-100% to +100%)
 
     while (true) {
         
@@ -66,9 +63,12 @@ int main() {
         auto position = encoder.get_position();
         auto velocity = encoder.get_velocity();
         auto counter = encoder.get_count();
-        write_pot(0x11, output_voltage); 
+        
+        float rpm = (15 * velocity) / M_PI;
 
-        printf("Position: %f, Velocity: %f\n, Counter: %d\n", position, velocity, counter);
+        write_pot(0x11, digital_pot_output); 
+
+        printf("Velocity: %.2f RPM \n, Counter: %d\n", velocity, counter);
 
         sleep_ms(1000);
     }
