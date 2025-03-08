@@ -51,7 +51,7 @@ int main() {
     float sampling_time = 100e-3;
 
     // Digital Pot settings
-    int digital_pot_output = 127; // 0 - 255 (-100% to +100%)
+    int digital_pot_output = 10; // 0 - 255 (-100% to +100%)
 
     while (true) {
         
