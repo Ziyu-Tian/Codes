@@ -32,7 +32,7 @@ void write_pot(uint8_t cmd, uint8_t value) {
 int main() {
     stdio_init_all();
     init_spi();
-    float pid_output = 0; // PID (0 - 5 V, STOP - FULL SPEED)
+    float pid_output = 239; // PID (0 - 5 V, STOP - FULL SPEED)
     float digital_pot_output = (((pid_output / 5) * 4.7) /5.0) * 255; // Map 0-5 V to 0-4.7 V
     // then change voltage to values in 
     int output_voltage = (int) digital_pot_output;
@@ -40,7 +40,7 @@ int main() {
     while (1) {
         printf("PID Output: %.2f / 5 V\n",pid_output);
         printf("Digital_Pot Output: %.2f V\n",(pid_output / 5) * 4.7);
-        write_pot(0x11, output_voltage); 
+        write_pot(0x12, 240); 
         sleep_ms(1000);
     }
 }
