@@ -10,8 +10,8 @@ struct can_frame tx_frame;
 
 bool send_can_data(struct repeating_timer *t) {
     // Data need to be sent 
-    tx_frame.can_id = 0x123;   // CAN ID
-    tx_frame.can_dlc = 4;      // Data Length (8 bytes max)
+    tx_frame.can_id = 0x125;   // CAN ID
+    tx_frame.can_dlc = 8;      // Data Length (8 bytes max)
     tx_frame.data[0] = 0x11;
     tx_frame.data[1] = 0x22;
     tx_frame.data[2] = 0x33;
