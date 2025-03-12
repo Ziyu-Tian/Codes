@@ -70,7 +70,7 @@ int main() {
 
         printf("Velocity: %.2f RPM \n, Counter: %d\n", velocity, counter);
 
-        sleep_ms(1000);
+        sleep_ms(500);
     }
 
     return 0;
