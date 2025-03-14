@@ -1,19 +1,47 @@
 #include "QuadratureEncoder.hpp"
 #include <stdio.h>
 
-QuadratureEncoder::QuadratureEncoder(uint8_t pin, float ppr, float gear_ratio) : ppr(ppr * 4.0f), gear_ratio(gear_ratio)
-{
-    pio_instance = pio0;
-    sm = pio_claim_unused_sm(pio_instance, true);
-    if (sm == -1)
-        pio_instance = pio1;
-    sm = pio_claim_unused_sm(pio_instance, true);
-    if (sm == -1)
-    printf("Error: No free state machine found!\n");
-    uint offset = pio_add_program(pio_instance, &quadrature_encoder_program);
-    quadrature_encoder_program_init(pio_instance, sm, pin, 0);
+// QuadratureEncoder::QuadratureEncoder(uint8_t pin, float ppr, float gear_ratio) : ppr(ppr * 4.0f), gear_ratio(gear_ratio)
+// {
+//     pio_instance = pio0;
+//     sm = pio_claim_unused_sm(pio_instance, true);
+//     if (sm == -1)
+//         pio_instance = pio1;
+//     sm = pio_claim_unused_sm(pio_instance, true);
+//     if (sm == -1)
+//     printf("Error: No free state machine found!\n");
+//     uint offset = pio_add_program(pio_instance, &quadrature_encoder_program);
+//     quadrature_encoder_program_init(pio_instance, sm, pin, 0);
 
+// }
+
+QuadratureEncoder::QuadratureEncoder(PIO pio, uint8_t pin, float ppr, float gear_ratio) 
+    : pio_instance(pio), ppr(ppr * 2.0f), gear_ratio(gear_ratio) 
+{
+    // Apply a state machine 
+    sm = pio_claim_unused_sm(pio_instance, true);
+    
+    // Ensure the sm applied successfully 
+    if (sm == -1) {
+        printf("Error: No free state machine found for pin %d!\n", pin);
+        return;
+    }
+
+    // Choose correct pio_loaded
+    static bool pio_program_loaded[2] = {false, false};
+    static uint offset[2];
+
+    uint pio_idx = pio_get_index(pio_instance);
+    if (!pio_program_loaded[pio_idx]) {
+        offset[pio_idx] = pio_add_program(pio_instance, &quadrature_encoder_program);
+        pio_program_loaded[pio_idx] = true;
+    }
+
+    //Initialize PIO
+    quadrature_encoder_program_init(pio_instance, sm, pin, offset[pio_idx]);
+    printf("Encoder pin %d assigned to PIO%d, SM%d\n", pin, pio_idx, sm);
 }
+
 
 
 void QuadratureEncoder::update(float dt)

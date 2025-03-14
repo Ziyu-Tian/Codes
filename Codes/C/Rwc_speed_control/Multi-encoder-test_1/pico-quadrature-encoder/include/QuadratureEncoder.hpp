@@ -14,7 +14,7 @@ public:
      * @param gear_ratio: if the encoder is attached to some kind of reduction, specify it here.
      *  This is particularly useful when the encoder is attacahed to an actuator with any kind of gearbox.
      */
-    QuadratureEncoder(uint8_t pin, float ppr, float gear_ratio = 1.0f);
+    QuadratureEncoder(PIO pio, uint8_t pin, float ppr, float gear_ratio = 1.0f);
 
     /** @brief Updates the internal encoder state. To be called at each sampling time
      *

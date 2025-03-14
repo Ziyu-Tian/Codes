@@ -1,6 +1,9 @@
 /*
 GPIO directly connection via PIO
 PPR captured with 2x frequency, measured as 1200 correctly
+*** Updates in 14-03-2025
+- RPM Test: Manual Test with 70-80 rpm, correct (400 ms sample)
+- Support three encoders
 */
 #include <QuadratureEncoder.hpp>
 #include "pico/stdlib.h"
@@ -47,11 +50,11 @@ int main() {
     float ppr = 600.0; // 
 
     // Initialize PIO_Encoder Class
-    QuadratureEncoder encoder_1(A_pin, ppr);
-    QuadratureEncoder encoder_2(A3_pin, ppr);
-    //QuadratureEncoder encoder_3(A2_pin, ppr);
+    QuadratureEncoder encoder_1(pio0,A_pin, ppr);
+    QuadratureEncoder encoder_2(pio0,A2_pin, ppr);
+    QuadratureEncoder encoder_3(pio1,A3_pin, ppr);
     // Sampling Time for Speed Calculation
-    float sampling_time = 100e-3;
+    float sampling_time = 400e-3;
 
     // Digital Pot settings
     int digital_pot_output = 10; // 0 - 255 (-100% to +100%)
@@ -60,7 +63,7 @@ int main() {
         
         encoder_1.update(sampling_time); // Initialize starting time
         encoder_2.update(sampling_time); // Initialize starting time 
-        // encoder_3.update(sampling_time); // Initialize starting time 
+        encoder_3.update(sampling_time); // Initialize starting time 
         // Position: return angle (default radium)
         // Velocity: return velocity in rad/s
         // Counter: return counting number (CW++, ACW--, 1200 per round)
@@ -72,21 +75,21 @@ int main() {
         auto velocity_2 = encoder_2.get_velocity();
         auto counter_2 = encoder_2.get_count();
 
-        // auto position_3 = encoder_3.get_position();
-        // auto velocity_3 = encoder_3.get_velocity();
-        // auto counter_3  = encoder_3.get_count();
+        auto position_3 = encoder_3.get_position();
+        auto velocity_3 = encoder_3.get_velocity();
+        auto counter_3  = encoder_3.get_count();
         
-        float rpm_1 = (15 * velocity) / M_PI;
-        float rpm_2 = (15 * velocity_2) / M_PI;
-        //float rpm_3 = (15 * velocity_3) / M_PI;
+        float rpm_1 = (30 * velocity) / M_PI;
+        float rpm_2 = (30 * velocity_2) / M_PI;
+        float rpm_3 = (30 * velocity_3) / M_PI;
 
         write_pot(0x11, digital_pot_output); 
 
         // printf("Velocity_1: %.2f RPM , Counter_1: %d ;", rpm_1, counter);
         // printf("Velocity_2: %.2f RPM , Counter_2: %d\n", rpm_2, counter_2);
-        printf("RPM_1: %.2f, ",velocity);
-        printf("RPM_2: %.2f, ",velocity_2);
-        //printf("RPM_3: %.2f\n",velocity_3);
+        printf("RPM_1: %.2f, ",rpm_1);
+        printf("RPM_2: %.2f, ",rpm_2);
+        printf("RPM_3: %.2f\n",rpm_3);
         sleep_ms(500);
     }
 

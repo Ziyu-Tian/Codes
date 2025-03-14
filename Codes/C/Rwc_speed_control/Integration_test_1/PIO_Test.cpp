@@ -1,6 +1,9 @@
 /*
 GPIO directly connection via PIO
 PPR captured with 2x frequency, measured as 1200 correctly
+
+** Updates 03-14-25:
+- Change QuadratureEncoder to 2x speed
 */
 #include <QuadratureEncoder.hpp>
 #include "pico/stdlib.h"
@@ -46,9 +49,9 @@ int main() {
 
     // Initialize PIO_Encoder Class
     QuadratureEncoder encoder(A_pin, ppr);
-
+    
     // Sampling Time for Speed Calculation
-    float sampling_time = 100e-3;
+    float sampling_time = 800e-3;
 
     // Digital Pot settings
     int digital_pot_output = 10; // 0 - 255 (-100% to +100%)
@@ -64,11 +67,11 @@ int main() {
         auto velocity = encoder.get_velocity();
         auto counter = encoder.get_count();
         
-        float rpm = (15 * velocity) / M_PI;
+        float rpm = (30 * velocity) / M_PI;
 
         write_pot(0x11, digital_pot_output); 
 
-        printf("Velocity: %.2f RPM \n, Counter: %d\n", velocity, counter);
+        printf("Velocity: %.2f RPM \n, Counter: %d\n", rpm, counter);
 
         sleep_ms(500);
     }
