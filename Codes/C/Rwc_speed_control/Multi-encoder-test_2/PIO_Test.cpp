@@ -8,6 +8,7 @@ PPR captured with 2x frequency, measured as 1200 correctly
 *** Updates 17-03-25
 - RPM Sample frequency changed to 1000 ms
 - Reduce PPR to 600 
+
 */
 #include <QuadratureEncoder.hpp>
 #include "pico/stdlib.h"

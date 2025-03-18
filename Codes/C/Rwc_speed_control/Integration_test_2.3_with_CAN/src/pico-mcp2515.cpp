@@ -1,14 +1,21 @@
 /*
-**Updates for Integration Test 2.2:
-- Implement receiving CAN data (standard data frame) from PC to Pico.
-- The target speed could be 4 bytes float number (IEEE 754 standard, range 0 - 15)
-- The digital pot could covert the speed into a value from 0 - 240 (0 - 4.7 V)
+
+
 **Updates for Integration 2.1:
 - Integrate RPM Serial output with CAN Sending Message, provides the
 possibility to compare latency between serial output and CAN Master.
 - Multi-core implementation: Core-0 read encoder ; Core-1 process CAN TX/RX
 - It is estimated the RPM is correct and almost same in CAN side and Serial 
 output. 
+
+**Updates for Integration Test 2.2:
+- Implement receiving CAN data (standard data frame) from PC to Pico.
+- The target speed could be 4 bytes float number (IEEE 754 standard, range 0 - 15)
+- The digital pot could covert the speed into a value from 0 - 240 (0 - 4.7 V)
+
+**Updates for Integration Test 2.3:
+- Multi-encoder supported
+- Average float number being TX via CAN
 */
 
 #include <stdio.h>
@@ -35,9 +42,11 @@ volatile uint8_t received_value = 0; // received CAN data
 
 // Pin_A (Pin_B would be set as A_pin + 1)
 #define A_pin 23  // Noted that A and B should be swapped in physical connection
+#define A2_pin 21 
+#define A3_pin 19
 #define ppr 600.0 // PPR
 // Sampling Time for Speed Calculation
-#define sampling_time 100e-3
+#define sampling_time 1000e-3
 
 float latest_rpm = 0.0;         // Global latest_rpm 
 bool new_rpm_available = false; // new_rpm_calculated_flag
@@ -110,27 +119,42 @@ bool timerCallback(struct repeating_timer *t) {
 void core0_entry()
 {
     // Initialize PIO_Encoder Class
-    QuadratureEncoder encoder(A_pin, ppr);
+    QuadratureEncoder encoder_1(pio0, A_pin,  ppr);
+    QuadratureEncoder encoder_2(pio0, A2_pin, ppr);
+    QuadratureEncoder encoder_3(pio1, A3_pin, ppr);
 
     while (true)
     {
-        encoder.update(sampling_time); // Initialize starting time
+        encoder_1.update(sampling_time); // Initialize starting time
+        encoder_2.update(sampling_time); // Initialize starting time 
+        encoder_3.update(sampling_time); // Initialize starting time 
 
         // Position: return angle (default radium)
         // Velocity: return velocity in rad/s
         // Counter: return counting number (CW++, ACW--, 1200 per round)
-        auto position = encoder.get_position();
-        auto velocity = encoder.get_velocity();
-        auto counter = encoder.get_count();
+        auto position = encoder_1.get_position();
+        auto velocity = encoder_1.get_velocity();
+        auto counter = encoder_1.get_count();
+
+        auto position_2 = encoder_2.get_position();
+        auto velocity_2 = encoder_2.get_velocity();
+        auto counter_2 = encoder_2.get_count();
+
+        auto position_3 = encoder_3.get_position();
+        auto velocity_3 = encoder_3.get_velocity();
+        auto counter_3  = encoder_3.get_count();
 
         float rpm = (15 * velocity) / M_PI;
+        float rpm_2 = (30 * velocity_2) / M_PI;
+        float rpm_3 = (30 * velocity_3) / M_PI;
 
+        rpm = (rpm + rpm_2 + rpm_3) /3;
 
         uint32_t rpm_data;
         memcpy(&rpm_data, &rpm, sizeof(float)); // change to 32 bits
         multicore_fifo_push_blocking(rpm_data); // TX RPM data
 
-        sleep_ms(100); // Send frequency 
+        sleep_ms(1000); // Send frequency 
     }
 }
 
@@ -204,7 +228,7 @@ int main()
     can0.setNormalMode();
 
     struct repeating_timer timer;
-    add_repeating_timer_ms(100, timerCallback, NULL, &timer); // 100 ms timer for CAN
+    add_repeating_timer_ms(1000, timerCallback, NULL, &timer); // 100 ms timer for CAN
 
     multicore_launch_core1(core1_entry); // Core-1
     core0_entry();                       // Core 0 
