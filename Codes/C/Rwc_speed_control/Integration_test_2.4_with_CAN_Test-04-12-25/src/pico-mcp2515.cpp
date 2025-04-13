@@ -1,14 +1,12 @@
 /*
-**Updates for Integration Test 2.2:
-- Implement receiving CAN data (standard data frame) from PC to Pico.
-- The target speed could be 4 bytes float number (IEEE 754 standard, range 0 - 15)
-- The digital pot could covert the speed into a value from 0 - 240 (0 - 4.7 V)
-**Updates for Integration 2.1:
-- Integrate RPM Serial output with CAN Sending Message, provides the
-possibility to compare latency between serial output and CAN Master.
-- Multi-core implementation: Core-0 read encoder ; Core-1 process CAN TX/RX
-- It is estimated the RPM is correct and almost same in CAN side and Serial
-output.
+
+**Integration Test 2.4 - Completed on 13/04/25:
+
+- CAN data TX/RX Test. 
+- The target speed could be sent in an intriger number (range 0 - 15, the first byte with index 0
+- The digital pot could covert the speed into a value from 0 - 255 (0 - 5 V, when VCC = 5V)
+- RX ID - 124, TX ID - 126
+
 */
 
 #include <stdio.h>
@@ -39,8 +37,7 @@ volatile uint8_t received_value = 0; // received CAN data
 #define A2_pin 21 // 12
 #define A3_pin 19 //
 #define ppr 600.0 // PPR
-// Sampling Time for Speed Calculation
-#define sampling_time 10e-3
+#define sampling_time 10e-3 // Sampling Time for Speed Calculation
 
 int latest_rpm = 0;                  // Global latest_rpm
 bool new_rpm_available = false;      // new_rpm_calculated_flag
@@ -67,37 +64,22 @@ void write_pot(uint8_t cmd, uint8_t value)
     gpio_put(PIN_CS, 0); // Select chip, start sending data
     spi_write_blocking(SPI_PORT, data, 2);
     gpio_put(PIN_CS, 1); // Unselect chip, end data sending
+    sleep_ms(10);
 }
 
 // Digital Pot Mapping - Int
 uint8_t map_can_to_pot_int(uint8_t value)
 {
-    return (uint8_t)value * (255.0 / 15.0); // 0 ~ 15 --> 0 ~ 240
+    return (uint8_t)value * (255.0 / 15.0); // 0 ~ 15 --> 0 ~ 255
 }
 
-// Digital Pot Mapping - Float
-uint8_t map_float_to_pot(float value)
-{
-
-    if (value < -15.0)
-        value = -15.0;
-    if (value > 15.0)
-        value = 15.0;
-
-    // Linear Mapping: (0~ 15) → (0 ~ 240)
-    return (uint8_t)(value * (255.0 / 15.0));
-}
 
 void send_can_data()
 {
     struct can_frame tx_frame;
-    tx_frame.can_id = 0x126; // CAN ID
-    tx_frame.can_dlc = 8;    // IEEE 754 Float
+    tx_frame.can_id = 0x126; // TX CAN ID
+    tx_frame.can_dlc = 8;    
 
-    // RPM to float
-    //memcpy(tx_frame.data, &latest_rpm, sizeof(float));
-
-  
     memset(tx_frame.data, 0, sizeof(tx_frame.data)); 
 
 
@@ -106,6 +88,7 @@ void send_can_data()
     // Send Message
     if (can0.sendMessage(&tx_frame) == MCP2515::ERROR_OK)
     {
+        // printf("\e[1;1H\e[2J");
         printf("CAN Successful! ID=0x%X\n", tx_frame.can_id);
         printf("Core 1 - RPM: %.2f\n", latest_rpm);
     }
@@ -165,13 +148,11 @@ void core0_entry()
     }
 }
 
-float read_voltage(uint channel) {
-
-    adc_select_input(channel);
-    uint16_t raw = adc_read(); 
-    
-    float voltage = raw * 3.3f / 4095.0f;
-    return voltage;
+float read_voltage()
+{
+    adc_select_input(0);       // GPIO26
+    uint16_t raw = adc_read(); // 0-4095
+    return raw * 3.3f / 4095.0f;
 }
 
 void core1_entry()
@@ -188,26 +169,23 @@ void core1_entry()
             }
             printf("\n");
 
-            int received_float = rx.data[0];
-            //memcpy(&received_float, &rx.data[0], sizeof(int));
-            printf("Received Float: %d\n", received_float);
+            int received_int = rx.data[0];
+            //memcpy(&received_int, &rx.data[0], sizeof(int));
+            printf("Received Float: %d\n", received_int);
 
             // 0 ~ 15 to 0 ~ 255
-            // write into digital pot
-            //uint8_t pot_value = map_float_to_pot(received_float);
-            uint8_t pot_value = map_can_to_pot_int(received_float);
-            //write_pot(0x21,0);
-            write_pot(0x12, 2); // Pot_2
+            uint8_t pot_value = map_can_to_pot_int(received_int);
+            write_pot(0x12,pot_value); // Pot-2 
 
-            float voltage0 = read_voltage(0);  // A0
-            printf("Received: %d, Voltage Output: %.5f, Pot Output: %d\n", received_float, voltage0, pot_value);
+            float voltage0 = read_voltage();  // A0
+            printf("Received: %d, Voltage Output: %.5f, Pot Output: %d\n", received_int, voltage0, pot_value);
             // printf("Received: %d, Pot Output: %d\n", received_raw, received_value);
         }
 
         if (multicore_fifo_rvalid())
         {
             uint32_t rpm_data = multicore_fifo_pop_blocking(); // FIFO Read
-            memcpy(&latest_rpm, &rpm_data, sizeof(int));       // Float conversion
+            memcpy(&latest_rpm, &rpm_data, sizeof(int));       
             new_rpm_available = true;                          // new_rpm already being calculated
         }
 
@@ -240,12 +218,12 @@ int main()
     can0.setFilterMask(MCP2515::MASK1, false, 0x7FF);
 
     // Filter（Only ID 0x126）
-    can0.setFilter(MCP2515::RXF0, false, 0x126);
-    can0.setFilter(MCP2515::RXF1, false, 0x126);
-    can0.setFilter(MCP2515::RXF2, false, 0x126);
-    can0.setFilter(MCP2515::RXF3, false, 0x126);
-    can0.setFilter(MCP2515::RXF4, false, 0x126);
-    can0.setFilter(MCP2515::RXF5, false, 0x126);
+    can0.setFilter(MCP2515::RXF0, false, 0x124);
+    can0.setFilter(MCP2515::RXF1, false, 0x124);
+    can0.setFilter(MCP2515::RXF2, false, 0x124);
+    can0.setFilter(MCP2515::RXF3, false, 0x124);
+    can0.setFilter(MCP2515::RXF4, false, 0x124);
+    can0.setFilter(MCP2515::RXF5, false, 0x124);
 
     // Change to normal mode
     can0.setNormalMode();
