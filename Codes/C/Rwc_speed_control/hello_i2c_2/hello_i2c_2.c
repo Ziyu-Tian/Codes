@@ -52,6 +52,7 @@ void enable_encoder_interrupt(i2c_inst_t *i2c)
     i2c_write_blocking(i2c, ENCODER_ADDR, &enable_interrupt, 1, false);
 }
 
+
 int main()
 {
     // I2C Pin for CANBed Pico
@@ -75,7 +76,7 @@ int main()
     gpio_pull_up(sda_pin);
     gpio_pull_up(scl_pin);
 
-  
+    
 
     printf("Starting I2C Encoder Read...\n");
 

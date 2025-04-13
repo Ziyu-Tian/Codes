@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 QuadratureEncoder::QuadratureEncoder(PIO pio, uint8_t pin, float ppr, float gear_ratio) 
-    : pio_instance(pio), ppr(ppr * 2.0f), gear_ratio(gear_ratio) 
+    : pio_instance(pio), ppr(ppr * 1.0f), gear_ratio(gear_ratio) 
 {
     // Apply a state machine 
     sm = pio_claim_unused_sm(pio_instance, true);

@@ -7,8 +7,8 @@ PPR captured with 1200 as expected
 #include "hardware/gpio.h"
 #include "hardware/timer.h"
 
-#define ENCODER_A 23    // GPIO Pin for Encoder A
-#define ENCODER_B 24    // GPIO Pin for Encoder B
+#define ENCODER_A 4    // GPIO Pin for Encoder A
+#define ENCODER_B 5   // GPIO Pin for Encoder B
 #define PPR 1200 // Pulse per Revolution for encoder E38S6G5-600B-G24N
 #define SAMPLE_TIME_MS 100  // Sampling Time
 #define SHAFT_DIAMETER 6 // Shaft Diameter of encoder (mm)

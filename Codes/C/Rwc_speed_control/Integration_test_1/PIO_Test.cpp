@@ -9,6 +9,7 @@ PPR captured with 2x frequency, measured as 1200 correctly
 #include "pico/stdlib.h"
 #include "hardware/spi.h"
 #include <stdio.h>
+#include "hardware/adc.h"
 
 // SPI PIN Config
 #define SPI_PORT spi0   // spi0 applied
@@ -38,6 +39,8 @@ void write_pot(uint8_t cmd, uint8_t value) {
     gpio_put(PIN_CS, 1); // Unselect chip, end data sending
 }
 
+
+
 int main() {
     
     stdio_init_all();
@@ -56,6 +59,7 @@ int main() {
     // Digital Pot settings
     int digital_pot_output = 10; // 0 - 255 (-100% to +100%)
 
+
     while (true) {
         
         encoder.update(sampling_time); // Initialize starting time
@@ -71,7 +75,8 @@ int main() {
 
         write_pot(0x11, digital_pot_output); 
 
-        printf("Velocity: %.2f RPM \n, Counter: %d\n", rpm, counter);
+
+        printf("Velocity: %.2f RPM \n, Counter: %d\n", velocity, counter);
 
         sleep_ms(500);
     }

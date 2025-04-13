@@ -24,8 +24,6 @@
 ; and wait for a fresh sample (takes ~4 SM cycles on average). The worst case
 ; sampling loop takes 10 cycles, so this program is able to read step rates up
 ; to sysclk / 10  (e.g., sysclk 125MHz, max step rate = 12.5 Msteps/sec)
-; 00 -> 10 -> 11 -> 01 -> 00 -> 10... CW
-; 00 -> 01 -> 11 -> 10 -> 00 -> 01.. ACW
 
 ; 00 state
     JMP update    ; read 00

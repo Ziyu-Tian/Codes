@@ -1,6 +1,5 @@
 /*
 
-
 **Updates for Integration 2.1:
 - Integrate RPM Serial output with CAN Sending Message, provides the
 possibility to compare latency between serial output and CAN Master.
@@ -16,6 +15,7 @@ output.
 **Updates for Integration Test 2.3:
 - Multi-encoder supported
 - Average float number being TX via CAN
+
 */
 
 #include <stdio.h>
@@ -41,14 +41,14 @@ volatile uint8_t received_value = 0; // received CAN data
 #define PIN_CS 8      // CS
 
 // Pin_A (Pin_B would be set as A_pin + 1)
-#define A_pin 23  // Noted that A and B should be swapped in physical connection
-#define A2_pin 21 
-#define A3_pin 19
+#define A_pin 23  // Noted that A and B should be swapped in physical connection //14
+#define A2_pin 21 //12
+#define A3_pin 19 //
 #define ppr 600.0 // PPR
 // Sampling Time for Speed Calculation
 #define sampling_time 1000e-3
 
-float latest_rpm = 0.0;         // Global latest_rpm 
+int latest_rpm = 0;     //float latest_rpm = 0.0;         // Global latest_rpm 
 bool new_rpm_available = false; // new_rpm_calculated_flag
 volatile bool can_send_flag = false; // can_send_flag
 
@@ -82,7 +82,7 @@ uint8_t map_can_to_pot(uint8_t can_value)
 }
 
 // Digital Pot Mapping - Float
-uint8_t map_float_to_pot(float value)
+uint8_t map_float_to_pot(int value) // float
 {
 
     if (value < -15.0)
@@ -96,18 +96,19 @@ uint8_t map_float_to_pot(float value)
 
 void send_can_data() {
     struct can_frame tx_frame;
-    tx_frame.can_id = 0x200; // CAN ID
+    tx_frame.can_id = 0x126; // CAN ID
     tx_frame.can_dlc = 4;    // IEEE 754 Float
 
     // RPM to float
-    memcpy(tx_frame.data, &latest_rpm, sizeof(float));
+    memcpy(tx_frame.data, &latest_rpm, sizeof(uint8_t));
 
     // Send Message
     if (can0.sendMessage(&tx_frame) == MCP2515::ERROR_OK) {
-        printf("CAN Successful! ID=0x%X\n", tx_frame.can_id);
-        printf("Core 1 - RPM: %.2f\n", latest_rpm);
+        // printf("\e[1;1H\e[2J");
+        // printf("CAN Successful! ID=0x%X\n", tx_frame.can_id);
+        // printf("Core 1 - RPM: %d\n", latest_rpm);
     } else {
-        printf("CAN Failed!\n");
+       // printf("CAN Failed!\n");
     }
 }
 
@@ -144,17 +145,19 @@ void core0_entry()
         auto velocity_3 = encoder_3.get_velocity();
         auto counter_3  = encoder_3.get_count();
 
-        float rpm = (15 * velocity) / M_PI;
-        float rpm_2 = (30 * velocity_2) / M_PI;
-        float rpm_3 = (30 * velocity_3) / M_PI;
+        int rpm = (30 * velocity) / M_PI;
+        int rpm_2 = (30 * velocity_2) / M_PI;
+        int rpm_3 = (30 * velocity_3) / M_PI;
 
-        rpm = (rpm + rpm_2 + rpm_3) /3;
+        rpm = (rpm + rpm_2 + rpm_3);
 
         uint32_t rpm_data;
-        memcpy(&rpm_data, &rpm, sizeof(float)); // change to 32 bits
+        memcpy(&rpm_data, &rpm, sizeof(int)); // change to 32 bits
+        //printf("\e[1;1H\e[2J");
+        printf("Core 1 - RPM: %d\n", rpm_data);
         multicore_fifo_push_blocking(rpm_data); // TX RPM data
 
-        sleep_ms(1000); // Send frequency 
+        //sleep_ms(1000); // Send frequency 
     }
 }
 
@@ -165,30 +168,34 @@ void core1_entry()
         if (can0.readMessage(&rx) == MCP2515::ERROR_OK)
         {
             // CAN Data (0-15)
-            printf("Raw CAN Data: ");
-            for (int i = 0; i < rx.can_dlc; i++)
-            {
-                printf("%02X ", rx.data[i]); // Print each bytes
-            }
-            printf("\n");
+            // printf("Raw CAN Data: ");
+            // for (int i = 0; i < rx.can_dlc; i++)
+            // {
+            //     printf("%02X ", rx.data[i]); // Print each bytes
+            // }
+            // printf("\n");
 
-            float received_float;
-            memcpy(&received_float, &rx.data[4], sizeof(float));
+            // int received_float;
+            // memcpy(&received_float, &rx.data[4], sizeof(uint8_t));
+            //int32_t received_float;
+            int received_float = rx.data[0];  
+            //printf("Received Int: %d\n", received_float);
+            
             // IEEE 754 Float - Big Endian in PC CAN Debugger
-            printf("Received Float: %.2f\n", received_float);
+            //printf("Received Float: %d\n", received_float);
 
             // 0 ~ 15 to 0 ~ 255
             // write into digital pot
             uint8_t pot_value = map_float_to_pot(received_float);
             write_pot(0x12, pot_value); // Pot_2
-            printf("Received: %.2f, Pot Output: %d\n", received_float, pot_value);
+            //printf("Received: %.2f, Pot Output: %d\n", received_float, pot_value);
             // printf("Received: %d, Pot Output: %d\n", received_raw, received_value);
         }
 
         if (multicore_fifo_rvalid())
         {
             uint32_t rpm_data = multicore_fifo_pop_blocking(); // FIFO Read
-            memcpy(&latest_rpm, &rpm_data, sizeof(float));     // Float conversion
+            memcpy(&latest_rpm, &rpm_data, sizeof(uint8_t));     // Float conversion
             new_rpm_available = true; // new_rpm already being calculated
         }
 
@@ -206,7 +213,7 @@ int main()
 
     // Initialize interface
     can0.reset();
-    can0.setBitrate(CAN_500KBPS, MCP_16MHZ);
+    can0.setBitrate(CAN_50KBPS, MCP_16MHZ);
     // can0.setNormalMode();
 
     // Config Mode
@@ -216,19 +223,19 @@ int main()
     can0.setFilterMask(MCP2515::MASK0, false, 0x7FF);
     can0.setFilterMask(MCP2515::MASK1, false, 0x7FF);
 
-    // Filter（Only ID 0x123）
-    can0.setFilter(MCP2515::RXF0, false, 0x123);
-    can0.setFilter(MCP2515::RXF1, false, 0x123);
-    can0.setFilter(MCP2515::RXF2, false, 0x123);
-    can0.setFilter(MCP2515::RXF3, false, 0x123);
-    can0.setFilter(MCP2515::RXF4, false, 0x123);
-    can0.setFilter(MCP2515::RXF5, false, 0x123);
+    // Filter（Only ID 0x124）
+    can0.setFilter(MCP2515::RXF0, false, 0x124);
+    can0.setFilter(MCP2515::RXF1, false, 0x124);
+    can0.setFilter(MCP2515::RXF2, false, 0x124);
+    can0.setFilter(MCP2515::RXF3, false, 0x124);
+    can0.setFilter(MCP2515::RXF4, false, 0x124);
+    can0.setFilter(MCP2515::RXF5, false, 0x124);
 
     // Change to normal mode
     can0.setNormalMode();
 
     struct repeating_timer timer;
-    add_repeating_timer_ms(1000, timerCallback, NULL, &timer); // 100 ms timer for CAN
+    add_repeating_timer_ms(10, timerCallback, NULL, &timer); // 100 ms timer for CAN
 
     multicore_launch_core1(core1_entry); // Core-1
     core0_entry();                       // Core 0 

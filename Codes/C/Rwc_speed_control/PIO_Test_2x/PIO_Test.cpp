@@ -17,7 +17,7 @@ int main() {
     QuadratureEncoder encoder(A_pin, ppr);
 
     // Sampling Time for Speed Calculation
-    float sampling_time = 1e-3;
+    float sampling_time = 10e-3;
 
     while (true) {
         
@@ -34,7 +34,7 @@ int main() {
         printf("Position: %f, Velocity: %f\n, Counter: %d\n", position, velocity, counter);
 
         // 
-        sleep_ms(1000);
+        //sleep_ms(1000);
     }
 
     return 0;

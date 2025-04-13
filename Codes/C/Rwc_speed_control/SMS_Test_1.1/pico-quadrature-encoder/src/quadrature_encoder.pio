@@ -24,8 +24,7 @@
 ; and wait for a fresh sample (takes ~4 SM cycles on average). The worst case
 ; sampling loop takes 10 cycles, so this program is able to read step rates up
 ; to sysclk / 10  (e.g., sysclk 125MHz, max step rate = 12.5 Msteps/sec)
-; 00 -> 10 -> 11 -> 01 -> 00 -> 10... CW
-; 00 -> 01 -> 11 -> 10 -> 00 -> 01.. ACW
+; B = 0 -> CW, B = 1 -> ACW
 
 ; 00 state
     JMP update    ; read 00
@@ -40,7 +39,7 @@
     JMP decrement ; read 11
 
 ; 10 state
-    JMP decrement ; read 00
+    JMP update    ; read 00
     JMP update    ; read 01
     JMP update    ; read 10
     JMP update    ; read 11
@@ -50,7 +49,7 @@
 
 ; 11 state
     JMP update    ; read 00
-    JMP increment ; read 01
+    JMP update    ; read 01
 decrement:
     ; note: the target of this instruction must be the next address, so that
     ; the effect of the instruction does not depend on the value of Y. The
@@ -100,6 +99,8 @@ increment_cont:
 static inline void quadrature_encoder_program_init(PIO pio, uint sm, uint pin, int max_step_rate)
 {
     pio_sm_set_consecutive_pindirs(pio, sm, pin, 2, false);
+    pio_gpio_init(pio, pin);
+    pio_gpio_init(pio, pin + 1);
     gpio_pull_up(pin);
     gpio_pull_up(pin + 1);
 

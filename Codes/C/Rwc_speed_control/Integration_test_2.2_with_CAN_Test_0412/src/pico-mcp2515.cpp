@@ -19,6 +19,7 @@ output.
 #include "pico/multicore.h"
 #include <cstring>
 #include <QuadratureEncoder.hpp>
+#include "hardware/adc.h"
 
 // CAN Config
 MCP2515 can0;
@@ -69,9 +70,9 @@ void write_pot(uint8_t cmd, uint8_t value)
 }
 
 // Digital Pot Mapping - Int
-uint8_t map_can_to_pot(uint8_t can_value)
+uint8_t map_can_to_pot_int(uint8_t value)
 {
-    return can_value * (240.0 / 15.0); // 0 ~ 15 --> 0 ~ 240
+    return (uint8_t)value * (255.0 / 15.0); // 0 ~ 15 --> 0 ~ 240
 }
 
 // Digital Pot Mapping - Float
@@ -84,7 +85,7 @@ uint8_t map_float_to_pot(float value)
         value = 15.0;
 
     // Linear Mapping: (0~ 15) → (0 ~ 240)
-    return (uint8_t)(value * (240.0 / 15.0));
+    return (uint8_t)(value * (255.0 / 15.0));
 }
 
 void send_can_data()
@@ -164,6 +165,15 @@ void core0_entry()
     }
 }
 
+float read_voltage(uint channel) {
+
+    adc_select_input(channel);
+    uint16_t raw = adc_read(); 
+    
+    float voltage = raw * 3.3f / 4095.0f;
+    return voltage;
+}
+
 void core1_entry()
 {
     while (true)
@@ -178,16 +188,19 @@ void core1_entry()
             }
             printf("\n");
 
-            int received_float;
-            memcpy(&received_float, &rx.data[4], sizeof(int));
-            // IEEE 754 Float - Big Endian in PC CAN Debugger
+            int received_float = rx.data[0];
+            //memcpy(&received_float, &rx.data[0], sizeof(int));
             printf("Received Float: %d\n", received_float);
 
             // 0 ~ 15 to 0 ~ 255
             // write into digital pot
-            uint8_t pot_value = map_float_to_pot(received_float);
-            write_pot(0x12, pot_value); // Pot_2
-            printf("Received: %.2f, Pot Output: %d\n", received_float, pot_value);
+            //uint8_t pot_value = map_float_to_pot(received_float);
+            uint8_t pot_value = map_can_to_pot_int(received_float);
+            //write_pot(0x21,0);
+            write_pot(0x12, 2); // Pot_2
+
+            float voltage0 = read_voltage(0);  // A0
+            printf("Received: %d, Voltage Output: %.5f, Pot Output: %d\n", received_float, voltage0, pot_value);
             // printf("Received: %d, Pot Output: %d\n", received_raw, received_value);
         }
 
@@ -206,10 +219,13 @@ void core1_entry()
     }
 }
 
+
+
 int main()
 {
     stdio_init_all();
     init_spi();
+    adc_init();
 
     // Initialize interface
     can0.reset();
