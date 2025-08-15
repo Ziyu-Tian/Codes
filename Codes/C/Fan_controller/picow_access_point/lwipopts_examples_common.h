@@ -1,5 +1,6 @@
-#ifndef __LWIPOPTS_H__
-#define __LWIPOPTS_H__
+#ifndef _LWIPOPTS_EXAMPLE_COMMONH_H
+#define _LWIPOPTS_EXAMPLE_COMMONH_H
+
 
 // Common settings used in most of the pico_w examples
 // (see https://www.nongnu.org/lwip/2_1_x/group__lwip__opts.html for details)
@@ -19,7 +20,9 @@
 #define MEM_LIBC_MALLOC             0
 #endif
 #define MEM_ALIGNMENT               4
+#ifndef MEM_SIZE
 #define MEM_SIZE                    4000
+#endif
 #define MEMP_NUM_TCP_SEG            32
 #define MEMP_NUM_ARP_QUEUE          10
 #define PBUF_POOL_SIZE              24
@@ -85,7 +88,5 @@
 #define PPP_DEBUG                   LWIP_DBG_OFF
 #define SLIP_DEBUG                  LWIP_DBG_OFF
 #define DHCP_DEBUG                  LWIP_DBG_OFF
-#define    LWIP_SNTP=1
-#define    LWIP_DNS=1
-#define   SNTP_SERVER_DNS=1
+
 #endif /* __LWIPOPTS_H__ */
