@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PYTHON_BIN="${PYTHON_BIN:-$(command -v python3)}"
+SERVICE_NAME="${PFD_SERVICE_NAME:-PersonalFinancialDashboard}"
+
+cd "$ROOT_DIR"
+
+if [[ "${1:-}" == "--supervise" ]]; then
+  "$PYTHON_BIN" server.py &
+  child_pid=$!
+
+  stop_child() {
+    kill "$child_pid" >/dev/null 2>&1 || true
+    wait "$child_pid" >/dev/null 2>&1 || true
+  }
+
+  trap 'stop_child; exit 0' TERM INT
+  wait "$child_pid"
+  exit $?
+fi
+
+if [[ -n "${BASH_VERSION:-}" ]]; then
+  exec -a "$SERVICE_NAME" "$PYTHON_BIN" server.py
+else
+  exec "$PYTHON_BIN" server.py
+fi

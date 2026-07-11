@@ -1,0 +1,9 @@
+.DS_Store
+__pycache__/
+data/account_balances.json
+data/category_rules.json
+data/*.json
+data/*.sqlite3
+data/*.sqlite3-*
+export/*.html
+logs/*.log
