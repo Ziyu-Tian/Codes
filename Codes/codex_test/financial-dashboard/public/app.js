@@ -9,6 +9,7 @@ const shortMoney = value => new Intl.NumberFormat('en-GB', {
 const esc = value => String(value).replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
 let allTransactions = [];
 let accounts = [];
+let manualAccounts = [];
 let balanceSnapshots = {};
 let categoryOptions = [];
 let categoryExpanded = false;
@@ -75,7 +76,8 @@ async function loadDashboard() {
   try {
     const data = await request(`/api/transactions?dataset=${encodeURIComponent(dataset)}`);
     allTransactions = data.transactions;
-    accounts = data.accounts;
+    manualAccounts = data.accounts.filter(account => account.source === 'manual');
+    accounts = data.accounts.filter(account => !account.archived);
     balanceSnapshots = data.balances || {};
     categoryOptions = data.category_options || [];
     collapsedMonths = new Set();
@@ -106,7 +108,8 @@ function setupAccountFilter() {
 function setupPeriodFilter() {
   const select = $('#periodFilter');
   const selected = select.value || 'all';
-  const months = [...new Set(allTransactions.map(item => item.date.slice(0, 7)))]
+  const months = [...new Set([...allTransactions.map(item => item.date.slice(0, 7)),
+    ...Object.values(balanceSnapshots).filter(value => value.source === 'manual').flatMap(value => value.history.map(row => row.as_of.slice(0, 7)))])]
     .filter(Boolean)
     .sort()
     .reverse();
@@ -224,6 +227,7 @@ function openMetricDialog(type) {
 function estimatedPosition(account) {
   const snapshot = balanceSnapshots[account.key];
   if (!snapshot) return null;
+  if (snapshot.source === 'manual') return { current: snapshot.balance, change: 0, snapshot };
   const afterSnapshot = item => item.date > snapshot.as_of;
   if (account.type === 'credit_card') {
     const cardActivity = allTransactions
@@ -259,17 +263,25 @@ function renderPortfolio() {
     : 'Add balances to track your position';
 
   $('#accountPositions').innerHTML = positions.map(({ account, position }) => {
+    if (account.source === 'manual' && position) {
+      const pendingItems = allTransactions.filter(item => item.linked_account_key === account.key && item.date > position.snapshot.as_of);
+      const pending = -pendingItems.reduce((sum, item) => sum + item.amount, 0);
+      const warning = pendingItems.length ? `<small class="manual-pending">${pendingItems.length} transfers to reconcile · net ${money(pending)}. Total deposits may be incomplete.</small>` : '';
+      return `<div class="position-row"><span>${esc(account.label)}<small>Manual balance · ${esc(position.snapshot.as_of)} ${esc(account.identifier_hint || '')}</small>${warning}<button type="button" class="manual-link" data-edit-manual="${esc(account.key)}">Update / history</button></span><strong>${money(position.current)}</strong></div>`;
+    }
     if (!position) return `<button class="position-row unset-position" data-open-balances="true"><span>${esc(account.label)}<small>No balance snapshot</small></span><strong>Set balance →</strong></button>`;
     const changeClass = position.change > 0 ? 'positive' : position.change < 0 ? 'negative' : '';
     const valueLabel = account.type === 'credit_card' ? 'estimated debt' : 'estimated balance';
     return `<div class="position-row"><span>${esc(account.label)}<small>${valueLabel} · snapshot ${esc(position.snapshot.as_of)}</small></span><strong>${money(position.current)}<small class="${changeClass}">${position.change >= 0 ? '+' : ''}${money(position.change)} since snapshot</small></strong></div>`;
   }).join('');
   document.querySelectorAll('[data-open-balances]').forEach(button => button.onclick = openBalanceDialog);
+  document.querySelectorAll('[data-edit-manual]').forEach(button => button.onclick = () => openManualAccount(button.dataset.editManual));
 }
 
 function accountBalanceAt(account, targetDate) {
   const snapshot = balanceSnapshots[account.key];
   if (!snapshot || account.type === 'credit_card') return null;
+  if (snapshot.source === 'manual') return manualBalanceAt(snapshot, targetDate);
   const accountItems = allTransactions.filter(item => item.account_key === account.key);
   if (targetDate >= snapshot.as_of) {
     const movement = accountItems
@@ -291,7 +303,7 @@ function monthEnd(key, latestDate) {
 
 function openBalanceDialog() {
   const latestDate = allTransactions.reduce((latest, item) => item.date > latest ? item.date : latest, '');
-  $('#balanceFields').innerHTML = accounts.map(account => {
+  $('#balanceFields').innerHTML = accounts.filter(account => account.source !== 'manual').map(account => {
     const snapshot = balanceSnapshots[account.key] || {};
     const isCard = account.type === 'credit_card';
     return `<div class="balance-field" data-account-key="${esc(account.key)}">
@@ -322,7 +334,7 @@ async function saveBalances(event) {
       method: 'POST',
       body: JSON.stringify({ dataset: $('#datasetFilter').value, balances })
     });
-    balanceSnapshots = data.balances;
+    balanceSnapshots = { ...Object.fromEntries(Object.entries(balanceSnapshots).filter(([, value]) => value.source === 'manual')), ...data.balances };
     $('#balanceDialog').close();
     render();
   } catch (error) {
@@ -376,7 +388,7 @@ function chartComparisonContext(selectedItems, selectedExternalItems, mode) {
     ? accountItems.filter(item => configuredDepositKeys.has(item.account_key))
     : accountItems;
   const snapshotDates = mode === 'deposits'
-    ? configuredDepositAccounts.map(account => balanceSnapshots[account.key].as_of)
+    ? configuredDepositAccounts.flatMap(account => [balanceSnapshots[account.key].as_of, ...(balanceSnapshots[account.key].history || []).map(row => row.as_of)])
     : [];
   const availableDates = [...rangeItems.map(item => item.date), ...snapshotDates].filter(Boolean).sort();
   const latestDate = availableDates.length ? availableDates[availableDates.length - 1] : '';
@@ -673,17 +685,16 @@ function renderDepositsChart(items, context) {
     .sort()
     .slice(-8);
   const snapshotMonths = configuredBankAccounts
-    .map(account => balanceSnapshots[account.key].as_of.slice(0, 7));
-  const months = monthKeys.length ? monthKeys : [...new Set(snapshotMonths)].sort().slice(-8);
+    .flatMap(account => [balanceSnapshots[account.key].as_of.slice(0, 7), ...(balanceSnapshots[account.key].history || []).map(row => row.as_of.slice(0, 7))]);
+  const selectedPeriod = $('#periodFilter').value;
+  const snapshotMonthsInRange = snapshotMonths.filter(key => selectedPeriod === 'all' || (selectedPeriod.startsWith('month:') ? key === selectedPeriod.slice(6) : key >= new Date(new Date(`${context.latestDate}T12:00:00`).getTime() - Number(selectedPeriod) * 86400000).toISOString().slice(0, 7)));
+  const months = Array.isArray(context.monthKeys) ? context.monthKeys : [...new Set([...monthKeys, ...snapshotMonthsInRange])].sort().slice(-8);
   const latestDate = context.latestDate || allTransactions.reduce((latest, item) => item.date > latest ? item.date : latest, '');
   const series = months.map(key => {
     const asOf = monthEnd(key, latestDate);
-    const total = configuredBankAccounts.reduce((sum, account) => {
-      const balance = accountBalanceAt(account, asOf);
-      return balance === null ? sum : sum + balance;
-    }, 0);
-    return { key, asOf, total };
-  });
+    const recorded = configuredBankAccounts.map(account => accountBalanceAt(account, asOf)).filter(value => value !== null);
+    return { key, asOf, total: recorded.reduce((sum, value) => sum + value, 0), recorded: recorded.length };
+  }).filter(point => point.recorded > 0);
   renderChartComparison(context, series, 'deposits', item => item.total);
   if ($('#chartStyle').value === 'line') {
     renderLineChart(series, [{
@@ -834,9 +845,11 @@ function renderTransactionRow(item) {
   const options = [...new Set([...categoryOptions, item.category])].sort((a, b) => a.localeCompare(b)).map(category =>
     `<option value="${esc(category)}" ${category === item.category ? 'selected' : ''}>${esc(category)}</option>`
   ).join('');
+  const canLink = manualAccounts.length && item.account_type !== 'credit_card' && (!item.excluded_from_totals || item.internal_reason === 'manual_account_transfer');
+  const linkAction = canLink ? `<button type="button" class="manual-link" data-link-transfer="${esc(item.transaction_fingerprint)}">${item.internal_reason === 'manual_account_transfer' ? 'Edit owned-account link' : 'Link to my savings account'}</button>` : '';
   return `<tr class="${item.transfer_type === 'internal' ? 'internal-row' : ''}">
     <td>${new Date(`${item.date}T12:00:00`).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' })}</td>
-    <td class="memo" title="${esc(description)}">${esc(description || 'Bank transaction')}</td>
+    <td class="memo" title="${esc(description)}">${esc(description || 'Bank transaction')}${linkAction}</td>
     <td><span class="type-badge ${badgeClass}">${label}</span></td>
     <td><select class="category-select" data-fingerprint="${esc(item.transaction_fingerprint)}" data-current="${esc(item.category)}">${options}<option value="__custom__">Custom…</option></select><small class="category-source">${categorySourceLabel(item.category_source)}</small></td>
     <td><strong>${esc(item.account_label)}</strong><small class="source-name">${esc(item.source)}</small></td>
@@ -914,6 +927,7 @@ function renderRows(items) {
     renderRows(items);
   });
   document.querySelectorAll('.category-select').forEach(select => select.onchange = saveTransactionCategory);
+  document.querySelectorAll('[data-link-transfer]').forEach(button => button.onclick = () => openManualTransfer(button.dataset.linkTransfer));
 }
 
 $('#datasetFilter').onchange = loadDashboard;

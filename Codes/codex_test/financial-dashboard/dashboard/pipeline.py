@@ -10,13 +10,14 @@ from .categorizer import (
 from .database import duplicate_transaction_count, load_raw_transactions, raw_file_count, sync_csv_dataset
 from .storage import load_balance_store, save_balance_store
 from .transaction_processor import process_transactions
+from . import manual_accounts
 
 
 def read_transactions(csv_dir, dataset):
     """Main transformation pipeline: SQLite raw rows -> processed, categorised transactions."""
     sync_csv_dataset(dataset, csv_dir)
     raw_items = load_raw_transactions(dataset)
-    processed_items = process_transactions(raw_items)
+    processed_items = manual_accounts.apply_transfers(process_transactions(raw_items), dataset)
     return apply_category_rules(processed_items, dataset)
 
 
@@ -28,6 +29,9 @@ def build_transactions_payload(dataset, csv_dir):
             "label": item["account_label"],
             "type": item["account_type"],
         }
+    manual = manual_accounts.load_accounts(dataset)
+    for account in manual:
+        account_map[account["key"]] = {k: v for k, v in account.items() if k != "key"}
     internal_pairs = len({
         item["transfer_pair_id"] for item in transactions if item["transfer_pair_id"]
     })
@@ -37,7 +41,7 @@ def build_transactions_payload(dataset, csv_dir):
             {"key": key, **details}
             for key, details in sorted(account_map.items(), key=lambda value: value[1]["label"])
         ],
-        "balances": load_balance_store().get(dataset, {}),
+        "balances": {**load_balance_store().get(dataset, {}), **manual_accounts.balance_store(dataset)},
         "category_options": category_options_for(dataset),
         "category_rule_count": category_rule_count(dataset),
         "file_count": raw_file_count(dataset),
@@ -67,6 +71,21 @@ def save_balances(dataset, csv_dir, balance_entries):
     store[dataset] = saved
     save_balance_store(store)
     return {"balances": saved}
+
+
+def save_manual_account(dataset, csv_dir, data):
+    transactions = read_transactions(csv_dir, dataset)
+    manual_accounts.save_account(dataset, data, {t["account_key"] for t in transactions})
+    return build_transactions_payload(dataset, csv_dir)
+
+
+def link_manual_transfer(dataset, csv_dir, data):
+    transactions = read_transactions(csv_dir, dataset)
+    item = next((t for t in transactions if t["transaction_fingerprint"] == data.get("fingerprint")), None)
+    if not item:
+        raise ValueError("Transaction not found.")
+    manual_accounts.save_transfer_link(dataset, item, data.get("account_key"), data.get("remember") is True)
+    return build_transactions_payload(dataset, csv_dir)
 
 
 def save_category_rule_for_transaction(dataset, csv_dir, fingerprint, category, learn_amount_rule=True):

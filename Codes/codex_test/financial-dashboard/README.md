@@ -131,6 +131,18 @@ Comparison ranges follow the selected account but are independent of the page's 
 
 The same two comparison ranges are pre-rendered into the JavaScript-free mobile snapshot, so they remain selectable in file viewers that support basic HTML form controls.
 
+## Manual Cash ISA and savings accounts
+
+Use **Add / manage ISA & savings** on Overview to add a Cash ISA or a savings account such as a Chase Saver. Enter the total confirmed balance (principal plus credited interest) and its date. No account is prefilled with personal details. Updates retain dated history; saving the same date corrects that observation. Select a history row to edit it. Leave the balance blank when editing account details only.
+
+Manual balances contribute to deposits and net position. Charts carry each observation forward, and do not assume a balance before the first recorded date. Balance updates do not create income or automatically classify a difference as interest. Archive hides an account from active totals and snapshots while retaining its history and transfer matching; uncheck Archive to restore it.
+
+Optionally enter a sort code and account number for exact matching against transfer references. These identifiers remain in the ignored local SQLite database; the page receives only the last four digits. Matching is never based just on a bank name or amount. Alternatively, use **Link to my savings account** in Transactions. You can remember the exact description, source account, original transaction type and direction for future imports. Removing a link also removes its matching remembered rule; other individually confirmed links remain intact.
+
+Confirmed owned-account transfers in either direction are excluded from income and spending. They never increment a manually entered savings balance. Transfers dated after the latest observation appear as **transfers to reconcile**; until you update the confirmed balance, aggregate deposits may be incomplete. Dates represent end-of-day balances, so same-day transactions are considered included in the observation.
+
+The web dashboard, mobile snapshot and deposit analytics use the same observation semantics. Matching identifiers, rules and private history notes are omitted from mobile exports and LLM tool results. Existing CSV accounts keep their current workflow. Manual account registration does not replace an account already imported from CSV.
+
 ## Category learning
 
 When you manually change a transaction category, the app stores:

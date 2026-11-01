@@ -46,6 +46,8 @@ Current API routes:
 - `GET /assets/pet/spritesheet`
 - `POST /api/balances`
 - `POST /api/category-rule`
+- `POST /api/manual-accounts`
+- `POST /api/manual-transfers`
 - `POST /api/analytics/chat`
 - `POST /api/analytics/settings`
 - `DELETE /api/analytics/settings`
@@ -149,6 +151,12 @@ When adding a backend feature, first ask whether it belongs in importer, databas
 
 The only calculation source for Analytics. It consumes processed local transactions and balance snapshots, applies the existing `excluded_from_totals` decisions, and returns aggregate money as integer pennies. It must never return memos, account identifiers, labels, filenames, paths, or transaction rows.
 
+### dashboard/manual_accounts.py
+
+Owns private manual Cash ISA/saver registration, dated balance history (integer pennies), exact matching identifiers, confirmed per-transaction links and opt-in exact-description rules. Tables are added without rewriting existing balances. Public account DTOs return only an identifier's last four digits. Pipeline applies manual transfer decisions before categorization. Manual balances never change from imported transfers; pending transfers after the latest observation are warnings only. History carries forward and never backfills before the first observation. Archived accounts retain history/matching but are excluded from active totals and exports. Existing CSV balances still use the original snapshot calculation.
+
+When changing this feature, update `public/manual-accounts.js`, the web deposit chart, `analytics_metrics.py`, and `export_mobile_report.py` together. Mobile exports omit matching identifiers, rules, history notes and archived accounts. Never seed real account names, identifiers or balances into source, fixtures, or Git. Use `tests/test_manual_accounts.py` for isolated synthetic integration coverage; `tests/manual_accounts_ui.cjs` requires a fresh synthetic fixture server on port 3001.
+
 ### dashboard/analytics_tools.py
 
 Defines the small read-only tool allowlist and performs exact local argument validation. Never add arbitrary SQL, file-reading, transaction-search, path, or free-form account tools.
@@ -169,6 +177,7 @@ Explicit user months and unambiguous metrics are resolved locally and override m
 - `public/app.js`: fetches JSON, holds UI state, renders metrics/charts/tables, saves category/balance edits.
 - `public/analytics.js`: singleton floating pet/chat controller, one-turn context, status/settings and fact-card UI. Render model text with `textContent`, never as HTML.
 - `public/analytics.css`: isolated floating widget, sprite and mobile bottom-sheet styling.
+- `public/manual-accounts.js`: manual account/history dialog and owned-savings transfer confirmation UI.
 - `public/styles.css`: visual styling. It is currently compact/minified; prefer small appended overrides unless doing an intentional full reformat.
 - `export_mobile_report.py`: generates the offline, read-only mobile HTML report. It defaults to iCloud Drive `~/Library/Mobile Documents/com~apple~CloudDocs/Personal Financial Dashboard/` when available, or `financial-dashboard/export/` otherwise. Set `MOBILE_REPORT_EXPORT_DIR` to override. Reports use one timestamped filename per dataset, such as `mobile-report-personal-YYYYMMDD-HHMMSS.html`, and older generated snapshots for the same dataset are deleted before writing the new one. The changing filename avoids stale iOS Quick Look previews while still keeping only one generated snapshot per dataset. The report must work without JavaScript because some mobile file previews do not execute scripts; use static HTML plus CSS radio/label controls for interactions.
 
@@ -187,6 +196,7 @@ User-local generated files:
 - `data/financial_dashboard.sqlite3`
 - `data/financial_dashboard.sqlite3-*`
 - `data/llm_settings.json`
+- `data/backups/`: private SQLite backups before account schema changes; never commit.
 - `export/*.html`
 - iCloud Drive mobile reports, usually `~/Library/Mobile Documents/com~apple~CloudDocs/Personal Financial Dashboard/mobile-report-*.html`
 - legacy backups may still exist: `data/account_balances.json`, `data/category_rules.json`

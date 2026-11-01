@@ -32,6 +32,8 @@ from dashboard.pipeline import (
     build_transactions_payload,
     save_balances,
     save_category_rule_for_transaction,
+    save_manual_account,
+    link_manual_transfer,
 )
 from export_mobile_report import write_mobile_report
 
@@ -217,6 +219,8 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         url = urlsplit(self.path)
+        if url.path in {"/api/manual-accounts", "/api/manual-transfers"}:
+            return self.handle_manual_accounts(url.path)
         if url.path == "/api/balances":
             return self.handle_save_balances()
         if url.path == "/api/category-rule":
@@ -251,6 +255,22 @@ class Handler(SimpleHTTPRequestHandler):
             return self.send_json(404, {"error": str(error)})
         except (TypeError, ValueError) as error:
             return self.send_json(422, {"error": f"Invalid CSV data: {error}"})
+
+    def handle_manual_accounts(self, path):
+        try:
+            if self.headers.get("Content-Type", "").split(";", 1)[0].strip() != "application/json":
+                return self.send_json(415, {"error": "Use application/json."})
+            data = self.read_json(max_length=16_384)
+            if not isinstance(data, dict):
+                raise ValueError("Request must be an object.")
+            dataset = data.get("dataset", "personal")
+            csv_dir = self.dataset_path(dataset)
+            save = save_manual_account if path == "/api/manual-accounts" else link_manual_transfer
+            payload = save(dataset, csv_dir, data)
+            return self.send_json(200, attach_mobile_report(dataset, payload))
+        except (ValueError, TypeError, KeyError):
+            # Never echo private request values or account identifiers.
+            return self.send_json(400, {"error": "Could not save. Check the account, balance, date and transfer selection."})
 
     def handle_save_balances(self):
         try:

@@ -16,6 +16,7 @@ from pathlib import Path
 
 from dashboard.config import DATASETS, PROJECT_ROOT
 from dashboard.pipeline import build_transactions_payload
+from dashboard.manual_accounts import balance_at as manual_balance_at
 
 
 def money(value):
@@ -55,8 +56,12 @@ def account_label(label):
 
 def estimated_position(account, transactions, balances):
     snapshot = balances.get(account["key"])
-    if not snapshot:
+    if not snapshot or account.get("archived"):
         return None
+    if snapshot.get("source") == "manual":
+        pending = sum(1 for t in transactions if t.get("linked_account_key") == account["key"]
+                      and t["date"] > snapshot["as_of"])
+        return {"current": snapshot["balance"], "change": 0, "snapshot": snapshot, "pending": pending}
 
     def after_snapshot(item):
         return item["date"] > snapshot["as_of"]
@@ -150,9 +155,12 @@ def render_metric(label, value, subtext="", tone=""):
 
 def mobile_report_data(payload):
     """Return a privacy-trimmed dataset for offline client-side interactions."""
-    key_map = {account["key"]: f"a{index}" for index, account in enumerate(payload["accounts"])}
+    active_accounts = [a for a in payload["accounts"] if not a.get("archived")]
+    key_map = {account["key"]: f"a{index}" for index, account in enumerate(active_accounts)}
     balances = {
-        key_map[key]: value
+        key_map[key]: {**{k: v for k, v in value.items() if k != "history"},
+                       **({"history": [{"balance": h["balance"], "as_of": h["as_of"]}
+                                        for h in value["history"]]} if "history" in value else {})}
         for key, value in payload["balances"].items()
         if key in key_map
     }
@@ -173,8 +181,9 @@ def mobile_report_data(payload):
                 "key": key_map[account["key"]],
                 "label": account_label(account["label"]),
                 "type": account["type"],
+                "source": account.get("source", "csv"),
             }
-            for account in payload["accounts"]
+            for account in active_accounts
         ],
         "balances": balances,
         "transactions": transactions,
@@ -190,6 +199,10 @@ def mobile_estimated_position(account, data):
     snapshot = data["balances"].get(account["key"])
     if not snapshot:
         return None
+    if snapshot.get("source") == "manual":
+        pending = sum(1 for t in data["transactions"] if t.get("linked_account_key") == account["key"]
+                      and t["date"] > snapshot["as_of"])
+        return {"current": snapshot["balance"], "change": 0, "snapshot": snapshot, "pending": pending}
 
     def after_snapshot(item):
         return item["date"] > snapshot["as_of"]
@@ -268,7 +281,9 @@ def render_initial_accounts(data):
                 '<small>No balance snapshot</small></div><span>—</span></div>'
             )
             continue
-        value_label = "estimated debt" if account["type"] == "credit_card" else "estimated balance"
+        value_label = "manual balance" if account.get("source") == "manual" else "estimated debt" if account["type"] == "credit_card" else "estimated balance"
+        if position.get("pending"):
+            value_label += f" · {position['pending']} transfers to reconcile; deposits may be incomplete"
         change_class = "positive" if position["change"] > 0 else "negative" if position["change"] < 0 else ""
         rows.append(
             f'<div class="account-row"><div><strong>{escape(account["label"])}</strong>'
@@ -322,6 +337,8 @@ def deposit_comparison_month_keys(data, comparison):
         if item["account_key"] in bank_keys
     }
     available.update(data["balances"][account["key"]]["as_of"][:7] for account in bank_accounts)
+    available.update(h["as_of"][:7] for account in bank_accounts
+                     for h in data["balances"][account["key"]].get("history", []))
     ordered = sorted(available)
     if not ordered:
         return []
@@ -434,6 +451,8 @@ def mobile_account_balance_at(account, data, target_date):
     snapshot = data["balances"].get(account["key"])
     if not snapshot or account["type"] == "credit_card":
         return None
+    if snapshot.get("source") == "manual":
+        return manual_balance_at(snapshot, target_date)
     account_items = [item for item in data["transactions"] if item["account_key"] == account["key"]]
     if target_date >= snapshot["as_of"]:
         movement = sum(
@@ -484,20 +503,26 @@ def mobile_deposit_series(data, rows, month_keys=None):
             for item in rows
             if any(account["key"] == item["account_key"] for account in bank_accounts)
         })
-        if not month_keys:
-            month_keys = sorted({
-                data["balances"][account["key"]]["as_of"][:7]
-                for account in bank_accounts
-            })
+        history_months = {h["as_of"][:7] for account in bank_accounts
+                          for h in data["balances"][account["key"]].get("history", [])}
+        # Only include observations in this view's transaction month range.
+        if month_keys and rows != data["transactions"]:
+            history_months = {m for m in history_months if month_keys[0] <= m <= month_keys[-1]}
+        month_keys = sorted(set(month_keys) | history_months) or sorted({
+            data["balances"][account["key"]]["as_of"][:7] for account in bank_accounts
+        })
     series = []
     for key in month_keys:
         as_of = mobile_month_end(data, key, latest_date)
         total = 0
+        known = 0
         for account in bank_accounts:
             balance = mobile_account_balance_at(account, data, as_of)
             if balance is not None:
                 total += balance
-        series.append({"key": key, "total": total})
+                known += 1
+        if known:
+            series.append({"key": key, "total": total})
     return series
 
 
@@ -606,6 +631,15 @@ def render_period_panel(data, period, title):
     deposit_previous_rows = transactions_for_month_keys(data, deposit_previous_keys)
     deposit_ytd_keys = deposit_comparison_month_keys(data, "ytd")
     deposit_ytd_rows = transactions_for_month_keys(data, deposit_ytd_keys)
+    deposit_dates = [t["date"] for t in data["transactions"]]
+    for account in data["accounts"]:
+        if account["type"] != "credit_card" and account["key"] in data["balances"]:
+            snapshot = data["balances"][account["key"]]
+            deposit_dates.extend([snapshot["as_of"], *[h["as_of"] for h in snapshot.get("history", [])]])
+    if period != "all" and deposit_dates:
+        cutoff = (datetime.fromisoformat(max(deposit_dates)) - timedelta(days=int(period))).strftime("%Y-%m")
+        deposit_dates = [d for d in deposit_dates if d[:7] >= cutoff]
+    selected_deposit_keys = sorted({d[:7] for d in deposit_dates})
     return f"""
     <section class="period-panel period-{escape(str(period))}-panel">
       <section class="metrics">
@@ -619,7 +653,7 @@ def render_period_panel(data, period, title):
           {render_cashflow_view(data, ytd_rows, "Since year start", "ytd", ytd_keys)}
         </div>
         <div class="chart-view deposits-view">
-          {render_deposits_view(data, rows, title)}
+          {render_deposits_view(data, rows, title, month_keys=selected_deposit_keys)}
           {render_deposits_view(data, deposit_previous_rows, "Month vs previous", "previous", deposit_previous_keys)}
           {render_deposits_view(data, deposit_ytd_rows, "Since year start", "ytd", deposit_ytd_keys)}
         </div>
@@ -755,7 +789,9 @@ def render_account_position(account, position):
           <span>—</span>
         </div>
         """
-    value_label = "estimated debt" if account["type"] == "credit_card" else "estimated balance"
+    value_label = "manual balance" if account.get("source") == "manual" else "estimated debt" if account["type"] == "credit_card" else "estimated balance"
+    if position.get("pending"):
+        value_label += f" · {position['pending']} transfers to reconcile; deposits may be incomplete"
     change_class = "positive" if position["change"] > 0 else "negative" if position["change"] < 0 else ""
     return f"""
       <div class="account-row">
@@ -825,6 +861,7 @@ function externalRows(rows) {
 function estimatedPosition(account) {
   const snapshot = data.balances[account.key];
   if (!snapshot) return null;
+  if (snapshot.source === 'manual') return { current: snapshot.balance, change: 0, snapshot };
   const afterSnapshot = item => item.date > snapshot.as_of;
   if (account.type === 'credit_card') {
     const cardActivity = data.transactions
@@ -845,6 +882,10 @@ function estimatedPosition(account) {
 function accountBalanceAt(account, targetDate) {
   const snapshot = data.balances[account.key];
   if (!snapshot || account.type === 'credit_card') return null;
+  if (snapshot.source === 'manual') {
+    const rows = (snapshot.history || []).filter(row => row.as_of <= targetDate).sort((a, b) => a.as_of.localeCompare(b.as_of));
+    return rows.length ? rows[rows.length - 1].balance : null;
+  }
   const accountItems = data.transactions.filter(item => item.account_key === account.key);
   if (targetDate >= snapshot.as_of) {
     const movement = accountItems

@@ -8,5 +8,6 @@ data/category_rules.json
 data/*.json
 data/*.sqlite3
 data/*.sqlite3-*
+data/backups/
 export/*.html
 logs/*.log

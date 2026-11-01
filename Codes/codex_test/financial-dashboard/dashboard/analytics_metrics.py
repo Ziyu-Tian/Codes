@@ -66,16 +66,11 @@ class AnalyticsDataset:
     @classmethod
     def from_local(cls, dataset, csv_dir, selected_account=None):
         # Local imports avoid introducing a pipeline -> analytics cycle.
-        from .pipeline import read_transactions
-        from .storage import load_balance_store
+        from .pipeline import build_transactions_payload
 
-        transactions = read_transactions(csv_dir, dataset)
-        account_map = {}
-        for item in transactions:
-            account_map[item["account_key"]] = {
-                "key": item["account_key"],
-                "type": item["account_type"],
-            }
+        payload = build_transactions_payload(dataset, csv_dir)
+        transactions = payload["transactions"]
+        account_map = {a["key"]: a for a in payload["accounts"] if not a.get("archived")}
         accounts = sorted(account_map.values(), key=lambda item: item["key"])
         if selected_account and selected_account not in account_map:
             raise AnalyticsDataError("The selected account is not part of this dataset.")
@@ -83,7 +78,7 @@ class AnalyticsDataset:
             dataset=dataset,
             transactions=transactions,
             accounts=accounts,
-            balances=load_balance_store().get(dataset, {}),
+            balances=payload["balances"],
             selected_account=selected_account,
         )
 
@@ -212,8 +207,17 @@ class AnalyticsDataset:
             raise AnalyticsDataError("Bank balance snapshots are required for deposit analytics.")
 
         total = Decimal("0")
+        recorded_accounts = 0
         all_items = self.scoped_transactions(account_scope)
         for account, snapshot in configured:
+            if snapshot.get("source") == "manual":
+                from .manual_accounts import balance_at
+                value = balance_at(snapshot, target_date.isoformat())
+                if value is not None:
+                    total += money_decimal(value)
+                    recorded_accounts += 1
+                continue
+            recorded_accounts += 1
             snapshot_date = date.fromisoformat(snapshot["as_of"])
             balance = money_decimal(snapshot["balance"])
             account_items = [
@@ -241,9 +245,12 @@ class AnalyticsDataset:
                 )
                 balance -= movement
             total += balance
+        if not recorded_accounts:
+            raise AnalyticsDataError("No balance was recorded for the requested date.")
         return {
             "value_minor": money_minor(total),
-            "configured_bank_accounts": len(configured),
+            "configured_bank_accounts": recorded_accounts,
+            "unrecorded_accounts": len(configured) - recorded_accounts,
             "as_of": target_date.isoformat(),
         }
 
@@ -338,6 +345,12 @@ class AnalyticsDataset:
         for month_key in iter_months(first, latest):
             summary = self.get_period_summary(month_key, account_scope)
             if metric == "deposits":
+                snapshots = [self.balances.get(a["key"]) for a in self.scoped_accounts(account_scope)
+                             if a.get("type") != "credit_card" and self.balances.get(a["key"])]
+                if snapshots and all(s.get("source") == "manual" for s in snapshots):
+                    observed = [row["as_of"] for s in snapshots for row in s.get("history", [])]
+                    if observed and summary["period"]["end"] < min(observed):
+                        continue
                 value = self.deposits_at(summary["period"]["end"], account_scope)["value_minor"]
             else:
                 value = summary["values"][f"{metric}_minor"]

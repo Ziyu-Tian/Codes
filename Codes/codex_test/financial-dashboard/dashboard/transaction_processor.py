@@ -15,8 +15,8 @@ def normalise_account(value):
 
 def memo_account(memo):
     """Extract a UK-style sort code + account number such as 000000 00000002."""
-    match = re.search(r"(?<!\d)(\d{6})\s+(\d{8})(?!\d)", memo or "")
-    return "".join(match.groups()) if match else ""
+    match = re.search(r"(?<!\d)(\d{2}[- ]?\d{2}[- ]?\d{2})\s+(\d{8})(?!\d)", memo or "")
+    return re.sub(r"\D", "", "".join(match.groups())) if match else ""
 
 
 def account_identity(source_stem, bank_account):

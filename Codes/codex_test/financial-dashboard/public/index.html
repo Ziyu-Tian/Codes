@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Personal Financial Dashboard</title>
-  <link rel="stylesheet" href="/styles.css?v=20260906-7">
+  <link rel="stylesheet" href="/styles.css?v=20261101-1">
   <link rel="stylesheet" href="/analytics.css?v=20260914-3">
 </head>
 <body>
@@ -12,6 +12,7 @@
       <section class="content"><header><div><p id="pageEyebrow" class="eyebrow">MULTI-ACCOUNT OVERVIEW</p><h1 id="pageTitle">Your financial overview.</h1><p id="pageDescription">Internal transfers are matched and excluded from income and spending.</p></div><div class="source-pill"><i></i> Live from CSV</div></header>
       <div class="filters"><button id="balanceButton" class="balance-button">Set account balances</button><select id="datasetFilter"><option value="personal">My CSV files</option><option value="demo">Sample demo</option></select><select id="accountFilter"><option value="all">All accounts</option></select><select id="periodFilter"><option value="all">All time</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select></div>
       <div id="overviewView" class="view-section">
+        <div class="manual-account-toolbar"><button id="addManualAccount" type="button" class="balance-button">Add / manage ISA & savings</button><small>Manual balances include principal and credited interest.</small></div>
         <div class="transfer-note"><span>↔</span><div><strong>Internal movement matching is active</strong><small>Owned-account transfers and B/CARD REWARDS Direct Debits are excluded from external totals.</small></div><div id="fileCount" class="file-count">0 CSV files</div></div>
         <section class="panel portfolio"><div class="panel-head"><div><span>BALANCE SNAPSHOTS</span><h3>Deposits & debt</h3></div><small id="portfolioStatus">Add balances to track your position</small></div><div class="portfolio-summary"><div><span>TOTAL DEPOSITS</span><strong id="totalDeposits">—</strong></div><div><span>CREDIT CARD DEBT</span><strong id="totalDebt">—</strong></div><div><span>NET POSITION</span><strong id="netPosition">—</strong></div></div><div id="accountPositions" class="account-positions"></div></section>
         <section class="metrics"><button class="metric-card" data-detail="net"><span>EXTERNAL NET FLOW</span><strong id="balance">£0</strong><small>Click to view external income and spending</small></button><button class="metric-card" data-detail="income"><span>EXTERNAL INCOME</span><strong id="income" class="green">£0</strong><small id="incomeCount">0 incoming payments</small></button><button class="metric-card" data-detail="spending"><span>EXTERNAL SPENDING</span><strong id="spent">£0</strong><small id="spendCount">0 outgoing payments</small></button></section>
@@ -62,6 +63,32 @@
   </section>
   <dialog id="balanceDialog"><form id="balanceForm"><div class="dialog-head"><div><p class="eyebrow">BALANCE SNAPSHOTS</p><h2>Set account balances</h2><p>Enter each end-of-day bank balance or positive credit-card debt.</p></div><button type="button" id="closeBalanceDialog" class="icon-button" aria-label="Close">×</button></div><div id="balanceFields" class="balance-fields"></div><p id="balanceError" class="dialog-error"></p><div class="dialog-actions"><button type="button" id="cancelBalances" class="secondary-button">Cancel</button><button type="submit" class="save-button">Save balances</button></div></form></dialog>
   <dialog id="metricDialog"><div class="metric-dialog"><div class="dialog-head"><div><p id="metricEyebrow" class="eyebrow">DETAILS</p><h2 id="metricTitle">Transactions</h2><p id="metricSummary"></p></div><button type="button" id="closeMetricDialog" class="icon-button" aria-label="Close">×</button></div><div id="metricRows" class="metric-detail-rows"></div></div></dialog>
-  <script src="/app.js?v=20260914-1"></script>
+  <dialog id="manualAccountDialog"><form id="manualAccountForm" class="manual-form">
+    <div class="dialog-head"><h2 id="manualAccountTitle">Add savings account</h2><button type="button" class="icon-button" data-close-manual="manualAccountDialog" aria-label="Close">×</button></div>
+    <div id="manualAccountList" class="manual-account-list" aria-label="Existing savings accounts"></div>
+    <input name="key" type="hidden">
+    <label>Account name<input name="label" maxlength="60" placeholder="My ISA / Chase Saver" required></label>
+    <label>Type<select name="type"><option value="cash_isa">Cash ISA</option><option value="saver">Savings account</option></select></label>
+    <label>Confirmed total balance (£)<input name="balance" type="number" min="0" max="1000000000000" step="0.01" placeholder="Leave blank to edit account details only"></label>
+    <label>Balance date<input name="as_of" type="date" required></label>
+    <label>Note (optional)<input name="note" maxlength="200" placeholder="e.g. includes this month's credited interest"></label>
+    <details><summary>Transfer matching (optional, saved privately on this Mac)</summary><label>Sort code + account number<input name="identifier" autocomplete="off" maxlength="30" inputmode="numeric" placeholder="Optional"></label><label class="manual-check"><input name="clear_identifier" type="checkbox">Clear saved matching identifier</label><p>Only the final four digits are returned to the page. Without an identifier, link a transaction in Transactions.</p></details>
+    <label class="manual-check"><input name="archived" type="checkbox">Archive account (hide from current totals; retain records)</label>
+    <p>Balances are entered manually. Transfer links do not add to this balance. A new record on an existing date replaces that date's record. Balance changes do not create income.</p>
+    <details><summary>Balance history — select a record to correct it</summary><div id="manualBalanceHistory"></div></details>
+    <p id="manualAccountError" class="dialog-error" role="alert"></p>
+    <div class="dialog-actions"><button type="button" class="secondary-button" data-close-manual="manualAccountDialog">Cancel</button><button type="submit" class="save-button">Save account / balance</button></div>
+  </form></dialog>
+  <dialog id="manualTransferDialog"><form id="manualTransferForm" class="manual-form">
+    <div class="dialog-head"><h2>Owned-account transfer</h2><button type="button" class="icon-button" data-close-manual="manualTransferDialog" aria-label="Close">×</button></div>
+    <p id="manualTransferDescription"></p><input name="fingerprint" type="hidden">
+    <label>Money moved to / from<select name="account_key"></select></label>
+    <label class="manual-check"><input name="remember" type="checkbox">Remember exact description, bank account, transaction type and direction</label>
+    <p>Internal transfers are excluded from income and spending. Your confirmed savings balance is unchanged until you update it.</p>
+    <p id="manualTransferError" class="dialog-error" role="alert"></p>
+    <div class="dialog-actions"><button type="button" class="secondary-button" data-close-manual="manualTransferDialog">Cancel</button><button type="submit" class="save-button">Save transfer link</button></div>
+  </form></dialog>
+  <script src="/app.js?v=20261101-1"></script>
+  <script src="/manual-accounts.js?v=20261101-1"></script>
   <script src="/analytics.js?v=20260914-1"></script>
 </body></html>
