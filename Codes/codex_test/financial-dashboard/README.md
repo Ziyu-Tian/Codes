@@ -133,7 +133,7 @@ The same two comparison ranges are pre-rendered into the JavaScript-free mobile 
 
 ## Manual Cash ISA and savings accounts
 
-Use **Add / manage ISA & savings** on Overview to add a Cash ISA or a savings account such as a Chase Saver. Enter the total confirmed balance (principal plus credited interest) and its date. No account is prefilled with personal details. Updates retain dated history; saving the same date corrects that observation. Select a history row to edit it. Leave the balance blank when editing account details only.
+Use **Add new account** on Overview and choose Cash ISA or Savings account to register an account. Enter the total confirmed balance (principal plus credited interest) and its date. To update an existing account, open **Set account balances** and select its **Update / history** button. Bank and card balances use the same entry point. No account is prefilled with personal details. Updates retain dated history; saving the same date corrects that observation. Select a history row to edit it. Leave the balance blank when editing account details only. Returning from a manual account editor preserves any unsaved bank/card balance entries.
 
 Manual balances contribute to deposits and net position. Charts carry each observation forward, and do not assume a balance before the first recorded date. Balance updates do not create income or automatically classify a difference as interest. Archive hides an account from active totals and snapshots while retaining its history and transfer matching; uncheck Archive to restore it.
 

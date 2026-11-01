@@ -4,8 +4,12 @@ function manualBalanceAt(snapshot, targetDate) {
   return rows.length ? rows[rows.length - 1].balance : null;
 }
 
+let manualReturnToBalances = false;
+
 function openManualAccount(key = '') {
   const account = manualAccounts.find(item => item.key === key);
+  manualReturnToBalances = Boolean(account && $('#balanceDialog').open);
+  if ($('#balanceDialog').open) $('#balanceDialog').close();
   const form = $('#manualAccountForm');
   form.reset();
   form.elements.key.value = key;
@@ -16,16 +20,12 @@ function openManualAccount(key = '') {
   const today = new Date();
   form.elements.as_of.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   $('#manualAccountError').textContent = '';
-  $('#manualAccountTitle').textContent = account ? 'Update savings account' : 'Add savings account';
-  $('#manualAccountList').replaceChildren();
-  manualAccounts.forEach(item => {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'secondary-button';
-    button.textContent = `${item.label}${item.archived ? ' (archived)' : ''}`;
-    button.onclick = () => openManualAccount(item.key);
-    $('#manualAccountList').append(button);
-  });
+  $('#manualAccountTitle').textContent = account ? `Update ${account.label}` : 'Add new account';
+  $('#manualHistorySection').hidden = !account;
+  $('#manualArchiveField').hidden = !account;
+  form.elements.balance.required = !account;
+  $('#manualAccountSave').textContent = account ? 'Save changes' : 'Add account';
+  $('#manualAccountCancel').textContent = manualReturnToBalances ? 'Back to balances' : 'Cancel';
   const history = balanceSnapshots[key]?.history || [];
   $('#manualBalanceHistory').replaceChildren();
   [...history].reverse().forEach(row => {
@@ -59,6 +59,13 @@ function openManualTransfer(fingerprint) {
 }
 
 $('#addManualAccount').onclick = () => openManualAccount();
+$('#manualAccountDialog').addEventListener('close', () => {
+  $('#manualAccountForm').elements.identifier.value = '';
+  if (manualReturnToBalances) {
+    manualReturnToBalances = false;
+    openBalanceDialog(true);
+  }
+});
 document.querySelectorAll('[data-close-manual]').forEach(button => {
   button.onclick = () => document.getElementById(button.dataset.closeManual).close();
 });
@@ -74,8 +81,8 @@ $('#manualAccountForm').onsubmit = async event => {
     if (!fields.key) delete fields.key;
     await request('/api/manual-accounts', { method: 'POST', body: JSON.stringify({ ...fields, dataset: $('#datasetFilter').value }) });
     form.elements.identifier.value = '';
-    $('#manualAccountDialog').close();
     await loadDashboard();
+    $('#manualAccountDialog').close();
   } catch (error) {
     $('#manualAccountError').textContent = error.message;
   } finally { submit.disabled = false; }

@@ -34,6 +34,7 @@ function setView(view) {
   $('#overviewView').hidden = selected !== 'overview';
   $('#transactionsView').hidden = selected !== 'transactions';
   $('#balanceButton').hidden = selected !== 'overview';
+  $('#addManualAccount').hidden = selected !== 'overview';
   $('#periodFilter').hidden = false;
   $('#pageEyebrow').textContent = viewCopy[selected].eyebrow;
   $('#pageTitle').textContent = viewCopy[selected].title;
@@ -267,7 +268,7 @@ function renderPortfolio() {
       const pendingItems = allTransactions.filter(item => item.linked_account_key === account.key && item.date > position.snapshot.as_of);
       const pending = -pendingItems.reduce((sum, item) => sum + item.amount, 0);
       const warning = pendingItems.length ? `<small class="manual-pending">${pendingItems.length} transfers to reconcile · net ${money(pending)}. Total deposits may be incomplete.</small>` : '';
-      return `<div class="position-row"><span>${esc(account.label)}<small>Manual balance · ${esc(position.snapshot.as_of)} ${esc(account.identifier_hint || '')}</small>${warning}<button type="button" class="manual-link" data-edit-manual="${esc(account.key)}">Update / history</button></span><strong>${money(position.current)}</strong></div>`;
+      return `<div class="position-row"><span>${esc(account.label)}<small>Manual balance · ${esc(position.snapshot.as_of)} ${esc(account.identifier_hint || '')}</small>${warning}</span><strong>${money(position.current)}</strong></div>`;
     }
     if (!position) return `<button class="position-row unset-position" data-open-balances="true"><span>${esc(account.label)}<small>No balance snapshot</small></span><strong>Set balance →</strong></button>`;
     const changeClass = position.change > 0 ? 'positive' : position.change < 0 ? 'negative' : '';
@@ -275,7 +276,6 @@ function renderPortfolio() {
     return `<div class="position-row"><span>${esc(account.label)}<small>${valueLabel} · snapshot ${esc(position.snapshot.as_of)}</small></span><strong>${money(position.current)}<small class="${changeClass}">${position.change >= 0 ? '+' : ''}${money(position.change)} since snapshot</small></strong></div>`;
   }).join('');
   document.querySelectorAll('[data-open-balances]').forEach(button => button.onclick = openBalanceDialog);
-  document.querySelectorAll('[data-edit-manual]').forEach(button => button.onclick = () => openManualAccount(button.dataset.editManual));
 }
 
 function accountBalanceAt(account, targetDate) {
@@ -301,9 +301,9 @@ function monthEnd(key, latestDate) {
   return new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
 }
 
-function openBalanceDialog() {
+function openBalanceDialog(preserveDraft = false) {
   const latestDate = allTransactions.reduce((latest, item) => item.date > latest ? item.date : latest, '');
-  $('#balanceFields').innerHTML = accounts.filter(account => account.source !== 'manual').map(account => {
+  if (preserveDraft !== true) $('#balanceFields').innerHTML = accounts.filter(account => account.source !== 'manual').map(account => {
     const snapshot = balanceSnapshots[account.key] || {};
     const isCard = account.type === 'credit_card';
     return `<div class="balance-field" data-account-key="${esc(account.key)}">
@@ -312,8 +312,17 @@ function openBalanceDialog() {
       <label>As of date<input class="snapshot-date" type="date" value="${snapshot.as_of || latestDate}"></label>
     </div>`;
   }).join('');
+  $('#manualBalancesSection').hidden = manualAccounts.length === 0;
+  $('#manualAccountList').innerHTML = manualAccounts.map(account => {
+    const snapshot = balanceSnapshots[account.key];
+    return `<button type="button" class="manual-balance-item" data-edit-manual="${esc(account.key)}"><span><strong>${esc(account.label)}${account.archived ? ' (archived)' : ''}</strong><small>${snapshot ? `${money(snapshot.balance)} · ${esc(snapshot.as_of)}` : 'No balance recorded'}</small></span><span>Update / history →</span></button>`;
+  }).join('');
+  $('#manualAccountList').querySelectorAll('[data-edit-manual]').forEach(button => {
+    button.onclick = () => openManualAccount(button.dataset.editManual);
+  });
   $('#balanceError').textContent = '';
-  $('#balanceDialog').showModal();
+  $('#balanceForm [type="submit"]').hidden = !accounts.some(account => account.source !== 'manual');
+  if (!$('#balanceDialog').open) $('#balanceDialog').showModal();
 }
 
 async function saveBalances(event) {
