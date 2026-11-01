@@ -279,7 +279,69 @@ def render_initial_accounts(data):
     return "\n".join(rows) or '<p class="empty">No accounts recognised.</p>'
 
 
-def mobile_grouped_cashflow(rows):
+def shift_month_key(key, offset):
+    year, month = [int(part) for part in key.split("-")]
+    absolute_month = year * 12 + month - 1 + offset
+    shifted_year, shifted_month = divmod(absolute_month, 12)
+    return f"{shifted_year:04d}-{shifted_month + 1:02d}"
+
+
+def month_key_range(start, end):
+    keys = []
+    key = start
+    while key <= end:
+        keys.append(key)
+        key = shift_month_key(key, 1)
+    return keys
+
+
+def comparison_month_keys(data, comparison):
+    available = sorted({item["date"][:7] for item in data["transactions"] if item.get("date")})
+    if not available:
+        return []
+    latest = available[-1]
+    if comparison == "previous":
+        return [shift_month_key(latest, -1), latest]
+    latest_year = latest[:4]
+    first_available = next(
+        (key for key in available if key.startswith(f"{latest_year}-")),
+        f"{latest_year}-01",
+    )
+    return month_key_range(first_available, latest)
+
+
+def deposit_comparison_month_keys(data, comparison):
+    bank_accounts = [
+        account for account in data["accounts"]
+        if account["type"] != "credit_card" and account["key"] in data["balances"]
+    ]
+    bank_keys = {account["key"] for account in bank_accounts}
+    available = {
+        item["date"][:7]
+        for item in data["transactions"]
+        if item["account_key"] in bank_keys
+    }
+    available.update(data["balances"][account["key"]]["as_of"][:7] for account in bank_accounts)
+    ordered = sorted(available)
+    if not ordered:
+        return []
+    latest = ordered[-1]
+    if comparison == "previous":
+        return [shift_month_key(latest, -1), latest]
+    latest_year = latest[:4]
+    first_available = next(
+        (key for key in ordered if key.startswith(f"{latest_year}-")),
+        f"{latest_year}-01",
+    )
+    return month_key_range(first_available, latest)
+
+
+def transactions_for_month_keys(data, month_keys):
+    wanted = set(month_keys)
+    return [item for item in data["transactions"] if item["date"][:7] in wanted]
+
+
+def mobile_grouped_cashflow(rows, month_keys=None):
     groups = defaultdict(lambda: {"income": 0.0, "spending": 0.0, "net": 0.0})
     for item in mobile_external_rows(rows):
         key = item["date"][:7]
@@ -288,11 +350,12 @@ def mobile_grouped_cashflow(rows):
         if item["amount"] < 0:
             groups[key]["spending"] += abs(item["amount"])
         groups[key]["net"] += item["amount"]
-    return [(key, groups[key]) for key in sorted(groups.keys())]
+    keys = month_keys if month_keys is not None else sorted(groups.keys())
+    return [(key, groups[key]) for key in keys]
 
 
-def render_initial_cashflow_chart(data):
-    months = mobile_grouped_cashflow(data["transactions"])
+def render_initial_cashflow_chart(data, month_keys=None):
+    months = mobile_grouped_cashflow(data["transactions"], month_keys)
     if not months:
         return '<p class="empty">No external cash flow.</p>'
     maximum = max(1, *[value for _key, values in months for value in (values["income"], values["spending"])])
@@ -310,8 +373,8 @@ def render_initial_cashflow_chart(data):
     )
 
 
-def render_initial_month_rows(data):
-    months = mobile_grouped_cashflow(data["transactions"])
+def render_initial_month_rows(data, month_keys=None):
+    months = mobile_grouped_cashflow(data["transactions"], month_keys)
     return "\n".join(
         f"""
         <div class="month-row">
@@ -387,8 +450,11 @@ def mobile_account_balance_at(account, data, target_date):
     return snapshot["balance"] - movement_after_target
 
 
-def mobile_month_end(data, key):
-    latest = max((item["date"] for item in data["transactions"]), default="")
+def mobile_month_end(data, key, latest_date=None):
+    latest = latest_date if latest_date is not None else max(
+        (item["date"] for item in data["transactions"]),
+        default="",
+    )
     if latest and latest[:7] == key:
         return latest
     year, month = [int(part) for part in key.split("-")]
@@ -396,27 +462,47 @@ def mobile_month_end(data, key):
     return (next_month - timedelta(days=1)).strftime("%Y-%m-%d")
 
 
-def render_deposits_chart(data, rows):
+def mobile_deposit_series(data, rows, month_keys=None):
     bank_accounts = [
         account for account in data["accounts"]
         if account["type"] != "credit_card" and account["key"] in data["balances"]
     ]
-    month_keys = sorted({
-        item["date"][:7]
-        for item in rows
-        if any(account["key"] == item["account_key"] for account in bank_accounts)
-    })
-    if not month_keys:
-        month_keys = sorted({data["balances"][account["key"]]["as_of"][:7] for account in bank_accounts})
+    if not bank_accounts:
+        return []
+    bank_keys = {account["key"] for account in bank_accounts}
+    latest_date = max(
+        [
+            item["date"]
+            for item in data["transactions"]
+            if item["account_key"] in bank_keys
+        ] + [data["balances"][account["key"]]["as_of"] for account in bank_accounts],
+        default="",
+    )
+    if month_keys is None:
+        month_keys = sorted({
+            item["date"][:7]
+            for item in rows
+            if any(account["key"] == item["account_key"] for account in bank_accounts)
+        })
+        if not month_keys:
+            month_keys = sorted({
+                data["balances"][account["key"]]["as_of"][:7]
+                for account in bank_accounts
+            })
     series = []
     for key in month_keys:
-        as_of = mobile_month_end(data, key)
+        as_of = mobile_month_end(data, key, latest_date)
         total = 0
         for account in bank_accounts:
             balance = mobile_account_balance_at(account, data, as_of)
             if balance is not None:
                 total += balance
         series.append({"key": key, "total": total})
+    return series
+
+
+def render_deposits_chart(data, rows, month_keys=None):
+    series = mobile_deposit_series(data, rows, month_keys)
     if not series:
         return '<p class="empty">Set bank account balances to show deposits.</p>'
     maximum = max(1, *[abs(item["total"]) for item in series])
@@ -433,9 +519,93 @@ def render_deposits_chart(data, rows):
     )
 
 
+def render_comparison_summary(rows, label, value_for_row, through_date=None):
+    if len(rows) < 2:
+        return '<div class="comparison-summary"><p>At least two months of data are needed for this comparison.</p></div>'
+    baseline = rows[0]
+    current = rows[-1]
+    baseline_value = value_for_row(baseline)
+    current_value = value_for_row(current)
+    change = current_value - baseline_value
+    tone = "positive" if change > 0 else "negative" if change < 0 else ""
+    arrow = "↑" if change > 0 else "↓" if change < 0 else "→"
+    if abs(baseline_value) > 0.005:
+        percentage = abs(change / abs(baseline_value) * 100)
+        percentage_text = (
+            f"{percentage:.1f}% {'higher' if change > 0 else 'lower' if change < 0 else 'unchanged'}"
+        )
+    else:
+        percentage_text = "New from a zero baseline" if abs(current_value) > 0.005 else "No change"
+    through = (
+        f"<small>Through {escape(date_label(through_date))}</small>"
+        if through_date and through_date[:7] == current["key"]
+        else ""
+    )
+    return f"""
+      <div class="comparison-summary">
+        <div class="comparison-range"><span>COMPARISON</span><strong>{escape(month_label(baseline["key"]))} – {escape(month_label(current["key"]))}</strong></div>
+        <div><span>{escape(month_label(current["key"]))} {escape(label)}</span><strong>{escape(money(current_value))}</strong>{through}</div>
+        <div><span>vs {escape(month_label(baseline["key"]))}</span><strong class="{tone}">{arrow} {escape(money(abs(change)))}</strong><small>{escape(percentage_text)}</small></div>
+      </div>
+    """
+
+
+def render_cashflow_view(data, rows, title, comparison="selected", month_keys=None):
+    scoped = data_for_rows(data, rows)
+    months = mobile_grouped_cashflow(rows, month_keys)
+    summary = "" if comparison == "selected" else render_comparison_summary(
+        [{"key": key, **values} for key, values in months],
+        "income",
+        lambda item: item["income"],
+        max((item["date"] for item in rows), default=""),
+    )
+    return f"""
+      <div class="comparison-view comparison-{escape(comparison)}-view">
+        <div class="section-title"><span>MONTHLY</span><h2>External cash flow · {escape(title)}</h2></div>
+        {summary}
+        <div class="chart cashflow-chart">{render_initial_cashflow_chart(scoped, month_keys)}</div>
+        <div>{render_initial_month_rows(scoped, month_keys)}</div>
+      </div>
+    """
+
+
+def render_deposits_view(data, rows, title, comparison="selected", month_keys=None):
+    series = mobile_deposit_series(data, rows, month_keys)
+    configured_bank_keys = {
+        account["key"] for account in data["accounts"]
+        if account["type"] != "credit_card" and account["key"] in data["balances"]
+    }
+    through_date = max(
+        [item["date"] for item in data["transactions"] if item["account_key"] in configured_bank_keys]
+        + [data["balances"][key]["as_of"] for key in configured_bank_keys],
+        default="",
+    )
+    summary = "" if comparison == "selected" or not series else render_comparison_summary(
+        series,
+        "deposits",
+        lambda item: item["total"],
+        through_date,
+    )
+    return f"""
+      <div class="comparison-view comparison-{escape(comparison)}-view">
+        <div class="section-title"><span>BALANCE TREND</span><h2>Monthly total deposits · {escape(title)}</h2></div>
+        {summary}
+        <div class="chart deposit-chart">{render_deposits_chart(data, rows, month_keys)}</div>
+      </div>
+    """
+
+
 def render_period_panel(data, period, title):
     rows = period_transactions(data, period)
     scoped = data_for_rows(data, rows)
+    previous_keys = comparison_month_keys(data, "previous")
+    previous_rows = transactions_for_month_keys(data, previous_keys)
+    ytd_keys = comparison_month_keys(data, "ytd")
+    ytd_rows = transactions_for_month_keys(data, ytd_keys)
+    deposit_previous_keys = deposit_comparison_month_keys(data, "previous")
+    deposit_previous_rows = transactions_for_month_keys(data, deposit_previous_keys)
+    deposit_ytd_keys = deposit_comparison_month_keys(data, "ytd")
+    deposit_ytd_rows = transactions_for_month_keys(data, deposit_ytd_keys)
     return f"""
     <section class="period-panel period-{escape(str(period))}-panel">
       <section class="metrics">
@@ -444,13 +614,14 @@ def render_period_panel(data, period, title):
 
       <section class="card">
         <div class="chart-view cashflow-view">
-          <div class="section-title"><span>MONTHLY</span><h2>External cash flow · {escape(title)}</h2></div>
-          <div class="chart cashflow-chart">{render_initial_cashflow_chart(scoped)}</div>
-          <div>{render_initial_month_rows(scoped)}</div>
+          {render_cashflow_view(data, rows, title)}
+          {render_cashflow_view(data, previous_rows, "Month vs previous", "previous", previous_keys)}
+          {render_cashflow_view(data, ytd_rows, "Since year start", "ytd", ytd_keys)}
         </div>
         <div class="chart-view deposits-view">
-          <div class="section-title"><span>BALANCE TREND</span><h2>Monthly total deposits · {escape(title)}</h2></div>
-          <div class="chart deposit-chart">{render_deposits_chart(data, rows)}</div>
+          {render_deposits_view(data, rows, title)}
+          {render_deposits_view(data, deposit_previous_rows, "Month vs previous", "previous", deposit_previous_keys)}
+          {render_deposits_view(data, deposit_ytd_rows, "Since year start", "ytd", deposit_ytd_keys)}
         </div>
       </section>
 
@@ -483,6 +654,9 @@ def render_report(payload, dataset, generated_at=None):
     <input class="state-radio" type="radio" id="period-30" name="period">
     <input class="state-radio" type="radio" id="chart-cashflow" name="chart" checked>
     <input class="state-radio" type="radio" id="chart-deposits" name="chart">
+    <input class="state-radio" type="radio" id="comparison-selected" name="comparison" checked>
+    <input class="state-radio" type="radio" id="comparison-previous" name="comparison">
+    <input class="state-radio" type="radio" id="comparison-ytd" name="comparison">
 
     <header class="hero">
       <p>PERSONAL FINANCIAL DASHBOARD</p>
@@ -498,6 +672,11 @@ def render_report(payload, dataset, generated_at=None):
       <div class="segmented">
         <label for="chart-cashflow">Income / spending</label>
         <label for="chart-deposits">Deposits</label>
+      </div>
+      <div class="segmented comparison-segmented">
+        <label for="comparison-selected">Selected range</label>
+        <label for="comparison-previous">Month vs previous</label>
+        <label for="comparison-ytd">Since year start</label>
       </div>
     </section>
 
@@ -900,6 +1079,9 @@ small { color: var(--muted); line-height: 1.4; }
   border: 1px solid var(--line);
   border-radius: 999px;
 }
+.comparison-segmented {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
 .state-radio {
   position: absolute;
   opacity: 0;
@@ -922,13 +1104,17 @@ small { color: var(--muted); line-height: 1.4; }
 #period-all:checked ~ .controls label[for="period-all"],
 #period-30:checked ~ .controls label[for="period-30"],
 #chart-cashflow:checked ~ .controls label[for="chart-cashflow"],
-#chart-deposits:checked ~ .controls label[for="chart-deposits"] {
+#chart-deposits:checked ~ .controls label[for="chart-deposits"],
+#comparison-selected:checked ~ .controls label[for="comparison-selected"],
+#comparison-previous:checked ~ .controls label[for="comparison-previous"],
+#comparison-ytd:checked ~ .controls label[for="comparison-ytd"] {
   background: var(--card);
   color: var(--ink);
   box-shadow: 0 4px 14px rgba(23, 38, 31, .08);
 }
 .period-panel,
-.chart-view {
+.chart-view,
+.comparison-view {
   display: none;
 }
 #period-all:checked ~ .period-all-panel,
@@ -937,6 +1123,11 @@ small { color: var(--muted); line-height: 1.4; }
 }
 #chart-cashflow:checked ~ .period-panel .cashflow-view,
 #chart-deposits:checked ~ .period-panel .deposits-view {
+  display: block;
+}
+#comparison-selected:checked ~ .period-panel .comparison-selected-view,
+#comparison-previous:checked ~ .period-panel .comparison-previous-view,
+#comparison-ytd:checked ~ .period-panel .comparison-ytd-view {
   display: block;
 }
 .metric, .card {
@@ -965,6 +1156,50 @@ small { color: var(--muted); line-height: 1.4; }
 }
 .section-title {
   margin-bottom: 14px;
+}
+.comparison-summary {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr;
+  gap: 12px;
+  align-items: center;
+  margin: 2px 0 12px;
+  padding: 12px;
+  border: 1px solid #dce8e0;
+  border-radius: 16px;
+  background: #f4f8f5;
+}
+.comparison-summary > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.comparison-summary span {
+  color: #88938d;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.comparison-summary strong {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 15px;
+}
+.comparison-summary small {
+  font-size: 10px;
+}
+.comparison-summary p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+}
+.comparison-range {
+  padding-right: 12px;
+  border-right: 1px solid #dce4de;
+}
+.comparison-range strong {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 11px;
+  white-space: nowrap;
 }
 .chart {
   display: flex;
@@ -1083,6 +1318,9 @@ footer {
 @media (max-width: 430px) {
   .metrics { grid-template-columns: 1fr; }
   .controls { position: sticky; top: 0; z-index: 2; padding-top: 4px; background: linear-gradient(var(--paper) 76%, transparent); }
+  .comparison-segmented label { padding: 0 6px; font-size: 11px; }
+  .comparison-summary { grid-template-columns: 1fr 1fr; }
+  .comparison-range { grid-column: 1 / -1; padding: 0 0 9px; border-right: 0; border-bottom: 1px solid #dce4de; }
   .metric { min-height: 112px; }
   .metric strong { font-size: 34px; }
 }

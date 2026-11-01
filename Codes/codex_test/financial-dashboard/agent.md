@@ -19,6 +19,18 @@ CSV folder
   -> public/app.js dashboard rendering
 ```
 
+Analytics is a separate, read-only branch:
+
+```text
+processed local transactions + balance snapshots
+  -> dashboard/analytics_metrics.py deterministic penny aggregates
+  -> dashboard/analytics_tools.py allowlisted function tools
+  -> dashboard/analytics_context.py one-turn in-memory context
+  -> dashboard/analytics_service.py tool-call orchestration / local fallback
+  -> dashboard/llm_client.py optional DeepSeek Responses API
+  -> server.py -> public/analytics.js
+```
+
 ## Backend modules
 
 ### server.py
@@ -30,8 +42,13 @@ Do not put CSV parsing, account matching, transfer detection, or category learni
 Current API routes:
 
 - `GET /api/transactions?dataset=personal|demo`
+- `GET /api/analytics/status`
+- `GET /assets/pet/spritesheet`
 - `POST /api/balances`
 - `POST /api/category-rule`
+- `POST /api/analytics/chat`
+- `POST /api/analytics/settings`
+- `DELETE /api/analytics/settings`
 
 After successful API calls, `server.py` triggers a best-effort mobile snapshot export. Export failures should be reported in JSON as `mobile_report_error`, not break the dashboard response.
 
@@ -42,6 +59,7 @@ Central paths and dataset mapping.
 - `DATASETS["personal"]` points to `../csv_input` by default, or `PFD_CSV_DIR`
 - `DATASETS["demo"]` points to `../csv_test_input` by default, or `PFD_DEMO_CSV_DIR`
 - local SQLite state lives in `financial-dashboard/data/financial_dashboard.sqlite3`
+- `PFD_PET_SPRITESHEET` optionally points to a local 8×9 pet atlas; the default is `~/.codex/pets/deepseek/spritesheet.webp`
 
 ### dashboard/storage.py
 
@@ -127,10 +145,30 @@ Responsibilities:
 
 When adding a backend feature, first ask whether it belongs in importer, database, processor, categorizer, storage, or pipeline.
 
+### dashboard/analytics_metrics.py
+
+The only calculation source for Analytics. It consumes processed local transactions and balance snapshots, applies the existing `excluded_from_totals` decisions, and returns aggregate money as integer pennies. It must never return memos, account identifiers, labels, filenames, paths, or transaction rows.
+
+### dashboard/analytics_tools.py
+
+Defines the small read-only tool allowlist and performs exact local argument validation. Never add arbitrary SQL, file-reading, transaction-search, path, or free-form account tools.
+
+### dashboard/analytics_context.py, dashboard/analytics_service.py and dashboard/llm_client.py
+
+`analytics_service.py` validates questions, executes one bounded tool-calling round, and falls back to deterministic local answers. `llm_client.py` is the optional DeepSeek Responses API adapter. The API key stays server-side and is loaded from `DEEPSEEK_API_KEY` or `data/llm_settings.json`; the latter is written through the local Analytics settings endpoint with mode `0600`.
+
+`analytics_context.py` holds one previous verified turn per random conversation ID in process memory only. Entries expire after 30 minutes, the store is capped at 64 entries, and dataset/account scope is matched through a process-local HMAC. Never accept client-provided history or persist these conversations.
+
+DeepSeek receives only the user's checked question, tool schemas, and explicitly allowlisted aggregate results. Responses API tool arguments are not trusted; local validation is mandatory. Do not log request bodies, questions, answers, tool outputs, or keys. Analytics routes must never trigger the mobile/iCloud export.
+
+Explicit user months and unambiguous metrics are resolved locally and override model arguments. Multi-month questions must cover exactly the named months and stay within the four-call bound; otherwise use the bounded local fallback. The server also overwrites model-provided account scope with the active dashboard scope. Narration requests contain no tool definitions; model narration containing DSML/tool protocol markup must never reach the UI, so render the already verified local fact instead.
+
 ## Frontend files
 
 - `public/index.html`: structure and asset version cache-busting.
 - `public/app.js`: fetches JSON, holds UI state, renders metrics/charts/tables, saves category/balance edits.
+- `public/analytics.js`: singleton floating pet/chat controller, one-turn context, status/settings and fact-card UI. Render model text with `textContent`, never as HTML.
+- `public/analytics.css`: isolated floating widget, sprite and mobile bottom-sheet styling.
 - `public/styles.css`: visual styling. It is currently compact/minified; prefer small appended overrides unless doing an intentional full reformat.
 - `export_mobile_report.py`: generates the offline, read-only mobile HTML report. It defaults to iCloud Drive `~/Library/Mobile Documents/com~apple~CloudDocs/Personal Financial Dashboard/` when available, or `financial-dashboard/export/` otherwise. Set `MOBILE_REPORT_EXPORT_DIR` to override. Reports use one timestamped filename per dataset, such as `mobile-report-personal-YYYYMMDD-HHMMSS.html`, and older generated snapshots for the same dataset are deleted before writing the new one. The changing filename avoids stale iOS Quick Look previews while still keeping only one generated snapshot per dataset. The report must work without JavaScript because some mobile file previews do not execute scripts; use static HTML plus CSS radio/label controls for interactions.
 
@@ -140,10 +178,15 @@ Never modify source CSV files from app code. Treat CSV as read-only input.
 
 The repo is intended to be publishable. Keep demo data fictitious. Do not commit real CSV exports, real account numbers, real learned category rules, balance snapshots, generated SQLite files, logs, or mobile reports.
 
+The optional Analytics assistant is hybrid, not fully offline: questions and small aggregate results are sent to DeepSeek when configured. Raw rows remain local. `.env` files and API keys must never be committed.
+
+The configured pet file remains outside the repository. `server.py` may serve only that one configured regular PNG/WebP through `/assets/pet/spritesheet`; do not add path parameters, directory serving, or copy downloaded pet art into Git.
+
 User-local generated files:
 
 - `data/financial_dashboard.sqlite3`
 - `data/financial_dashboard.sqlite3-*`
+- `data/llm_settings.json`
 - `export/*.html`
 - iCloud Drive mobile reports, usually `~/Library/Mobile Documents/com~apple~CloudDocs/Personal Financial Dashboard/mobile-report-*.html`
 - legacy backups may still exist: `data/account_balances.json`, `data/category_rules.json`
@@ -156,6 +199,7 @@ After backend changes:
 
 ```bash
 python3 -m py_compile financial-dashboard/server.py financial-dashboard/dashboard/*.py
+python3 -m unittest discover -s financial-dashboard/tests -v
 ```
 
 If the server is running, restart it before API verification.

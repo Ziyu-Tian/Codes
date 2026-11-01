@@ -8,6 +8,7 @@ The app is designed for private local use:
 - no account system;
 - no telemetry;
 - no network access required for your financial data;
+- optional cloud-assisted Analytics remains disabled until a DeepSeek API key is configured;
 - raw CSVs, learned category rules, balance snapshots, SQLite cache, logs, and mobile exports are ignored by git.
 
 ## Quick start
@@ -119,6 +120,17 @@ financial-dashboard/data/financial_dashboard.sqlite3
 
 The dashboard applies later transactions to estimate deposits, credit-card debt, and net position.
 
+## Chart comparisons
+
+The overview chart can switch between income and spending, net income, and total deposits, using either bars or lines. Its comparison control provides:
+
+- **Month vs previous**: the latest imported month beside the immediately preceding calendar month;
+- **Since year start**: every month from the first imported month in the latest year through the latest month.
+
+Comparison ranges follow the selected account but are independent of the page's 30-day, 90-day, and single-month filters. Months without external cash flow are shown as zero; total deposits carry the latest estimated bank balance forward. A current, incomplete month is labelled **to date**.
+
+The same two comparison ranges are pre-rendered into the JavaScript-free mobile snapshot, so they remain selectable in file viewers that support basic HTML form controls.
+
 ## Category learning
 
 When you manually change a transaction category, the app stores:
@@ -127,6 +139,67 @@ When you manually change a transaction category, the app stores:
 - an amount/merchant-based learned rule for future matching.
 
 This learning data is local and ignored by git.
+
+## Optional DeepSeek Analytics
+
+The animated **deepseek酱** button in the lower-right corner opens a read-only financial assistant over both Overview and Transactions. All totals and comparisons are calculated locally from the same processed transactions used by the dashboard. The model can request only four allowlisted aggregate tools; it cannot read CSV files, query arbitrary SQL, inspect transaction memos, or modify local data.
+
+The tool allowlist is:
+
+- `get_period_summary`: exact income, spending, and net income for one month;
+- `compare_financial_metric`: month-on-month, year-start, or previous-year comparison;
+- `get_monthly_metric_series`: six-month, twelve-month, year-to-date, or available monthly trend;
+- `get_category_breakdown`: aggregated income/spending categories for one month.
+
+Explicit months and unambiguous income/spending metrics are resolved locally and take precedence over model-generated arguments. Questions naming two to four months must cover exactly those months; a missing, wrong, or extra model month triggers a bounded local calculation instead. The active dashboard account scope is also enforced locally. Internal model protocol text such as DSML is rejected and replaced with a locally rendered answer from the verified tool result.
+
+Without an API key, common questions still receive deterministic local answers. With DeepSeek configured, the app sends only:
+
+- the checked question;
+- the analytics tool definitions;
+- the minimum aggregate result needed to explain the answer.
+
+Raw transactions, account/card identifiers, memos, filenames, paths, and custom category names are not sent. The verified number cards shown under each answer come directly from local calculations, not from model prose.
+
+The widget displays only the latest question and answer. A random, process-local conversation ID lets one short follow-up inherit the preceding tool intent—for example, asking “What about the previous month?” after a category question. The server keeps at most one verified turn per conversation for 30 minutes, never writes it to disk, and starts a new context when the dataset or selected account changes. Dashboard time filters are deliberately not inherited; explicit time in the question wins.
+
+The current default model is `deepseek-flash` (DeepSeek V4.1 Flash) through the stateless Responses API. Open the pet, select the settings button, paste the key, and choose **Save on this Mac**. The server stores it at:
+
+```text
+financial-dashboard/data/llm_settings.json
+```
+
+The file is ignored by Git, is created with owner-only `0600` permissions, and is never returned to the browser. The same panel can remove it. This is plaintext local secret storage, so keep FileVault and the macOS login password enabled.
+
+Override the model when needed:
+
+```bash
+DEEPSEEK_MODEL="deepseek-flash" python3 server.py
+```
+
+For a temporary terminal-only session, the environment variable still takes priority over the local file:
+
+```zsh
+read -s "DEEPSEEK_API_KEY?DeepSeek API key: "
+export DEEPSEEK_API_KEY
+python3 server.py
+```
+
+Environment variables supported by the adapter are:
+
+```text
+DEEPSEEK_API_KEY
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_MODEL=deepseek-flash
+DEEPSEEK_REASONING_EFFORT=none
+DEEPSEEK_TIMEOUT_SECONDS=20
+DEEPSEEK_MAX_OUTPUT_TOKENS=800
+PFD_PET_SPRITESHEET=~/.codex/pets/deepseek/spritesheet.webp
+```
+
+This feature is hybrid rather than fully offline: the question and exact aggregate amounts used for an answer leave the Mac. Do not paste CSV rows, account numbers, card numbers, filenames, or local paths into the chat. The app blocks common forms of those inputs and does not persist chat history.
+
+The pet spritesheet is loaded through one fixed, read-only local route and is never added to this repository. The default expects an 8-column by 9-row, 1536×1872 PNG or WebP at `~/.codex/pets/deepseek/spritesheet.webp`; use `PFD_PET_SPRITESHEET` to choose another local file. Missing or mismatched art falls back to a static assistant icon without affecting Analytics. The floating assistant is part of the live dashboard only and is not included in offline mobile snapshots.
 
 ## Mobile snapshot
 
