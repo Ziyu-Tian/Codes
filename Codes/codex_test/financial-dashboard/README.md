@@ -129,8 +129,6 @@ The overview chart can switch between income and spending, net income, and total
 
 Comparison ranges follow the selected account but are independent of the page's 30-day, 90-day, and single-month filters. Months without external cash flow are shown as zero; total deposits carry the latest estimated bank balance forward. A current, incomplete month is labelled **to date**.
 
-The same two comparison ranges are pre-rendered into the JavaScript-free mobile snapshot, so they remain selectable in file viewers that support basic HTML form controls.
-
 ## Manual Cash ISA and savings accounts
 
 Use **Add new account** on Overview and choose Cash ISA or Savings account to register an account. Enter the total confirmed balance (principal plus credited interest) and its date. To update an existing account, open **Set account balances** and select its **Update / history** button. Bank and card balances use the same entry point. No account is prefilled with personal details. Updates retain dated history; saving the same date corrects that observation. Select a history row to edit it. Leave the balance blank when editing account details only. Returning from a manual account editor preserves any unsaved bank/card balance entries.
@@ -141,7 +139,7 @@ Optionally enter a sort code and account number for exact matching against trans
 
 Confirmed owned-account transfers in either direction are excluded from income and spending. They never increment a manually entered savings balance. Transfers dated after the latest observation appear as **transfers to reconcile**; until you update the confirmed balance, aggregate deposits may be incomplete. Dates represent end-of-day balances, so same-day transactions are considered included in the observation.
 
-The web dashboard, mobile snapshot and deposit analytics use the same observation semantics. Matching identifiers, rules and private history notes are omitted from mobile exports and LLM tool results. Existing CSV accounts keep their current workflow. Manual account registration does not replace an account already imported from CSV.
+The web dashboard and deposit analytics use the same observation semantics. Matching identifiers, rules and private history notes are omitted from LLM tool results. Existing CSV accounts keep their current workflow. Manual account registration does not replace an account already imported from CSV.
 
 ## Category learning
 
@@ -209,25 +207,13 @@ DEEPSEEK_MAX_OUTPUT_TOKENS=800
 PFD_PET_SPRITESHEET=~/.codex/pets/deepseek/spritesheet.webp
 ```
 
-This feature is hybrid rather than fully offline: the question and exact aggregate amounts used for an answer leave the Mac. Do not paste CSV rows, account numbers, card numbers, filenames, or local paths into the chat. The app blocks common forms of those inputs and does not persist chat history.
+This feature is hybrid rather than fully offline: the question and exact aggregate amounts used for an answer leave the Mac. The server blocks standalone/split eight-digit account numbers and normalizes full-width digits and invisible formatting characters before checking. It also compares questions and every outbound input item against locally known identifiers from CSV and manual accounts across datasets, including archived accounts and eight-digit bank-account suffixes. The previous turn is rechecked before reuse. Identifiers remain backend-only and never enter tool results. These checks do not identify every possible form of personal information: do not paste names, CSV rows, credentials or other private text into the chat.
 
-The pet spritesheet is loaded through one fixed, read-only local route and is never added to this repository. The default expects an 8-column by 9-row, 1536×1872 PNG or WebP at `~/.codex/pets/deepseek/spritesheet.webp`; use `PFD_PET_SPRITESHEET` to choose another local file. Missing or mismatched art falls back to a static assistant icon without affecting Analytics. The floating assistant is part of the live dashboard only and is not included in offline mobile snapshots.
+The pet spritesheet is loaded through one fixed, read-only local route and is never added to this repository. The default expects an 8-column by 9-row, 1536×1872 PNG or WebP at `~/.codex/pets/deepseek/spritesheet.webp`; use `PFD_PET_SPRITESHEET` to choose another local file. Missing or mismatched art falls back to a static assistant icon without affecting Analytics.
 
-## Mobile snapshot
+## Phone access
 
-Each dashboard refresh generates a read-only mobile HTML snapshot. By default, on macOS it is saved to:
-
-```text
-~/Library/Mobile Documents/com~apple~CloudDocs/Personal Financial Dashboard/mobile-report-personal-YYYYMMDD-HHMMSS.html
-```
-
-Override the export folder with:
-
-```bash
-MOBILE_REPORT_EXPORT_DIR="/path/to/export" python3 server.py
-```
-
-The snapshot is a static HTML file with CSS-only controls, so it can show data even when a mobile file preview does not run JavaScript. Each refresh deletes older generated snapshots for that dataset and writes one newly named file. The timestamped filename helps iOS Quick Look avoid showing a stale cached preview.
+Use the live dashboard through your private Tailscale connection. Offline HTML snapshots and automatic iCloud exports have been removed; opening the dashboard or updating balances does not write a financial report to a cloud folder. The server still binds to `127.0.0.1`, so private remote access requires your existing proxy/forwarding configuration.
 
 ## Start automatically on macOS login
 

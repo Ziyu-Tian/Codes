@@ -12,6 +12,7 @@ from .analytics_tools import (
     parse_tool_arguments,
 )
 from .llm_client import DeepSeekAPIError, DeepSeekResponsesClient
+from .analytics_privacy import normalise_text, contains_account_number, known_identifiers, safe_provider_payload
 
 
 MAX_QUESTION_LENGTH = 1_000
@@ -76,15 +77,15 @@ class AnalyticsInputError(ValueError):
     """A user-facing request validation error."""
 
 
-def validate_question(question):
+def validate_question(question, identifiers=()):
     if not isinstance(question, str):
         raise AnalyticsInputError("Question must be text.")
-    question = question.strip()
+    question = normalise_text(question).strip()
     if not question:
         raise AnalyticsInputError("Enter a question first.")
     if len(question) > MAX_QUESTION_LENGTH:
         raise AnalyticsInputError(f"Question must be at most {MAX_QUESTION_LENGTH} characters.")
-    if any(pattern.search(question) for pattern in SENSITIVE_QUESTION_PATTERNS):
+    if contains_account_number(question, identifiers) or any(pattern.search(question) for pattern in SENSITIVE_QUESTION_PATTERNS):
         raise AnalyticsInputError(
             "For privacy, do not paste account numbers, card numbers, CSV rows, filenames, or local paths. "
             "Use the dashboard account filter instead."
@@ -586,7 +587,8 @@ class AnalyticsService:
         return self.client.public_status()
 
     def answer(self, data, question, account_scope="all", conversation_id=None):
-        question = validate_question(question)
+        identifiers = known_identifiers(data)
+        question = validate_question(question, identifiers)
         if account_scope not in {"all", "selected"}:
             raise AnalyticsInputError("Invalid account scope.")
         if account_scope == "selected" and not data.selected_account:
@@ -597,6 +599,11 @@ class AnalyticsService:
             data.selected_account,
         )
         previous_context = self.conversation_store.get(conversation_id, context_key)
+        if previous_context:
+            try:
+                validate_question(previous_context.get("question", ""), identifiers)
+            except AnalyticsInputError:
+                previous_context = None
         context_used = previous_context is not None
         runner = AnalyticsToolRunner(data)
         explicit_periods = explicit_periods_from_question(question, data, account_scope)
@@ -698,7 +705,7 @@ class AnalyticsService:
                 ),
             }],
         }]
-        selection = self.client.create_response(
+        selection = self._provider_response(runner.data,
             instructions=SYSTEM_PROMPT,
             input_items=input_items,
             tools=TOOL_DEFINITIONS,
@@ -769,7 +776,7 @@ class AnalyticsService:
                 "output": json.dumps(result, ensure_ascii=False, separators=(",", ":")),
             })
 
-        narration = self.client.create_response(
+        narration = self._provider_response(runner.data,
             instructions=NARRATION_PROMPT,
             input_items=input_items,
         )
@@ -798,6 +805,11 @@ class AnalyticsService:
                 "DeepSeek returned an empty answer or internal tool markup, so the verified local result was rendered instead."
             )
         return payload
+
+    def _provider_response(self, data, **kwargs):
+        if not safe_provider_payload(kwargs.get("input_items", []), known_identifiers(data)):
+            raise AnalyticsInputError("Private account information was blocked before sending.")
+        return self.client.create_response(**kwargs)
 
     def _local_fallback(
         self,

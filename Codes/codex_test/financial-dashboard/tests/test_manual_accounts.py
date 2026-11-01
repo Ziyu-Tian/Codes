@@ -8,7 +8,6 @@ from unittest.mock import patch
 from dashboard import database, manual_accounts
 from dashboard.pipeline import build_transactions_payload, save_manual_account, link_manual_transfer, save_balances
 from dashboard.analytics_metrics import AnalyticsDataset, AnalyticsDataError
-from export_mobile_report import mobile_report_data, mobile_account_balance_at, mobile_estimated_position, render_report, mobile_deposit_series
 
 
 class ManualAccountsTests(unittest.TestCase):
@@ -60,6 +59,13 @@ class ManualAccountsTests(unittest.TestCase):
         self.assertEqual(manual_accounts.load_accounts("personal"), [])
         self.assertEqual(manual_accounts.balance_store("personal"), {})
 
+    def test_private_blocklist_includes_archived_accounts_in_other_datasets(self):
+        manual_accounts.save_account("personal", {**self.entry, "identifier": "123456 87654321", "archived": True})
+        data = AnalyticsDataset.from_local("demo", self.csv)
+        self.assertIn("12345687654321", data.private_identifiers)
+        self.assertIn("87654321", data.private_identifiers)
+        self.assertFalse(any(a.get("source") == "manual" for a in data.accounts))
+
     def test_history_corrections_forward_only_and_existing_balances_survive(self):
         key, _ = self.create()
         save_balances("demo", self.csv, [{"account_key": "00000000000001", "balance": 2000, "as_of": "2026-09-30"}])
@@ -86,24 +92,15 @@ class ManualAccountsTests(unittest.TestCase):
         payload = link_manual_transfer("demo", self.csv, {"fingerprint": item["transaction_fingerprint"], "account_key": None})
         self.assertFalse(any(t["excluded_from_totals"] for t in payload["transactions"] if "MY SAVINGS" in t["memo"]))
 
-    def test_analytics_and_snapshot_agree_and_never_include_private_matching_data(self):
+    def test_analytics_never_includes_private_matching_data(self):
         key, payload = self.create()
         data = AnalyticsDataset.from_local("demo", self.csv, selected_account=key)
         self.assertEqual(data.deposits_at("2026-10-31", "selected")["value_minor"], 100000)
         with self.assertRaises(AnalyticsDataError):
             data.deposits_at("2026-09-01", "selected")
-        trimmed = mobile_report_data(payload)
-        account = next(a for a in trimmed["accounts"] if a.get("source") == "manual")
-        self.assertIsNone(mobile_account_balance_at(account, trimmed, "2026-09-01"))
-        self.assertEqual(mobile_account_balance_at(account, trimmed, "2026-10-31"), 1000)
-        self.assertEqual(mobile_estimated_position(account, trimmed)["current"], 1000)
-        serialized = json.dumps(trimmed)
+        serialized = json.dumps(data.deposits_at("2026-10-31", "selected"))
         self.assertNotIn("00000000000002", serialized)
         self.assertNotIn("private observation", serialized)
-        html = render_report(payload, "demo")
-        self.assertNotIn("00000000000002", html)
-        self.assertNotIn("private observation", html)
-        self.assertIn("transfers to reconcile", html)
         series = data.get_monthly_metric_series("deposits", "last_6_months", "selected")
         self.assertEqual(series["points"][0]["month"], "2026-09")
 
@@ -111,9 +108,10 @@ class ManualAccountsTests(unittest.TestCase):
         key, _ = self.create()
         payload = save_manual_account("demo", self.csv, {**self.entry, "key": key, "identifier": "",
                                                         "as_of": "2026-11-01", "balance": "1105"})
-        trimmed = mobile_report_data(payload)
-        series = mobile_deposit_series(trimmed, trimmed["transactions"])
-        self.assertEqual(series[-1], {"key": "2026-11", "total": 1105})
+        data = AnalyticsDataset.from_local("demo", self.csv, selected_account=key)
+        series = data.get_monthly_metric_series("deposits", "all_available", "selected")
+        self.assertEqual(series["points"][-1]["month"], "2026-11")
+        self.assertEqual(series["points"][-1]["value_minor"], 110500)
 
     def test_invalid_account_does_not_persist_partial_state(self):
         for change in ({"balance": "nan"}, {"balance": "-1"}, {"identifier": "123"},
@@ -128,4 +126,4 @@ class ManualAccountsTests(unittest.TestCase):
         self.assertEqual(len(payload["balances"][key]["history"]), 1)
         self.assertTrue(any(t.get("linked_account_key") == key for t in payload["transactions"]))
         self.assertFalse(any(a["key"] == key for a in AnalyticsDataset.from_local("demo", self.csv).accounts))
-        self.assertFalse(any(a.get("source") == "manual" for a in mobile_report_data(payload)["accounts"]))
+        self.assertIn("00000000000002", AnalyticsDataset.from_local("demo", self.csv).private_identifiers)

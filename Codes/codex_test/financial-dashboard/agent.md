@@ -52,7 +52,7 @@ Current API routes:
 - `POST /api/analytics/settings`
 - `DELETE /api/analytics/settings`
 
-After successful API calls, `server.py` triggers a best-effort mobile snapshot export. Export failures should be reported in JSON as `mobile_report_error`, not break the dashboard response.
+API calls return local JSON only. Offline HTML snapshots and automatic iCloud exports have been removed; do not recreate financial report files as a side effect of reading or saving data.
 
 ### dashboard/config.py
 
@@ -155,7 +155,11 @@ The only calculation source for Analytics. It consumes processed local transacti
 
 Owns private manual Cash ISA/saver registration, dated balance history (integer pennies), exact matching identifiers, confirmed per-transaction links and opt-in exact-description rules. Tables are added without rewriting existing balances. Public account DTOs return only an identifier's last four digits. Pipeline applies manual transfer decisions before categorization. Manual balances never change from imported transfers; pending transfers after the latest observation are warnings only. History carries forward and never backfills before the first observation. Archived accounts retain history/matching but are excluded from active totals and exports. Existing CSV balances still use the original snapshot calculation.
 
-When changing this feature, update `public/manual-accounts.js`, the web deposit chart, `analytics_metrics.py`, and `export_mobile_report.py` together. Mobile exports omit matching identifiers, rules, history notes and archived accounts. Never seed real account names, identifiers or balances into source, fixtures, or Git. Use `tests/test_manual_accounts.py` for isolated synthetic integration coverage; `tests/manual_accounts_ui.cjs` requires a fresh synthetic fixture server on port 3001.
+When changing this feature, update `public/manual-accounts.js`, the web deposit chart, and `analytics_metrics.py` together. Never seed real account names, identifiers or balances into source, fixtures, or Git. Use `tests/test_manual_accounts.py` for isolated synthetic integration coverage; `tests/manual_accounts_ui.cjs` requires a fresh synthetic fixture server on port 3001.
+
+### dashboard/analytics_privacy.py
+
+Normalizes Unicode digits/formatting, rejects generic eight-digit account numbers in questions, and compares user text against locally known CSV/manual identifiers across datasets (including archived accounts and bank account suffixes). `AnalyticsDataset.private_identifiers` is backend-only; never serialize it. Recheck prior context and all provider input items before either provider request. Block with a generic error or local fallback; never echo an identifier or call the provider to decide whether text is private.
 
 ### dashboard/analytics_tools.py
 
@@ -179,7 +183,7 @@ Explicit user months and unambiguous metrics are resolved locally and override m
 - `public/analytics.css`: isolated floating widget, sprite and mobile bottom-sheet styling.
 - `public/manual-accounts.js`: manual account/history dialog and owned-savings transfer confirmation UI. `Add new account` is creation-only; existing manual accounts are updated through `Set account balances`, alongside CSV bank/card balances. Returning from the manual editor preserves bank/card drafts.
 - `public/styles.css`: visual styling. It is currently compact/minified; prefer small appended overrides unless doing an intentional full reformat.
-- `export_mobile_report.py`: generates the offline, read-only mobile HTML report. It defaults to iCloud Drive `~/Library/Mobile Documents/com~apple~CloudDocs/Personal Financial Dashboard/` when available, or `financial-dashboard/export/` otherwise. Set `MOBILE_REPORT_EXPORT_DIR` to override. Reports use one timestamped filename per dataset, such as `mobile-report-personal-YYYYMMDD-HHMMSS.html`, and older generated snapshots for the same dataset are deleted before writing the new one. The changing filename avoids stale iOS Quick Look previews while still keeping only one generated snapshot per dataset. The report must work without JavaScript because some mobile file previews do not execute scripts; use static HTML plus CSS radio/label controls for interactions.
+- Mobile browsers use the live dashboard via the user's private Tailscale setup. No offline snapshot generator or iCloud report export is supported.
 
 ## Local state and privacy
 
@@ -198,7 +202,6 @@ User-local generated files:
 - `data/llm_settings.json`
 - `data/backups/`: private SQLite backups before account schema changes; never commit.
 - `export/*.html`
-- iCloud Drive mobile reports, usually `~/Library/Mobile Documents/com~apple~CloudDocs/Personal Financial Dashboard/mobile-report-*.html`
 - legacy backups may still exist: `data/account_balances.json`, `data/category_rules.json`
 
 These are intentionally ignored by git.

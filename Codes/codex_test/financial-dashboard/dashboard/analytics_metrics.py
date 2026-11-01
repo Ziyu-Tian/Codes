@@ -5,7 +5,7 @@ stream into small aggregate DTOs whose money values are integer pennies.
 """
 
 from calendar import monthrange
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
 import re
@@ -62,11 +62,13 @@ class AnalyticsDataset:
     accounts: list
     balances: dict
     selected_account: str | None = None
+    private_identifiers: tuple = field(default=(), repr=False)
 
     @classmethod
     def from_local(cls, dataset, csv_dir, selected_account=None):
         # Local imports avoid introducing a pipeline -> analytics cycle.
         from .pipeline import build_transactions_payload
+        from .analytics_privacy import load_private_identifiers
 
         payload = build_transactions_payload(dataset, csv_dir)
         transactions = payload["transactions"]
@@ -80,6 +82,7 @@ class AnalyticsDataset:
             accounts=accounts,
             balances=payload["balances"],
             selected_account=selected_account,
+            private_identifiers=load_private_identifiers(),
         )
 
     def _validate_scope(self, account_scope):

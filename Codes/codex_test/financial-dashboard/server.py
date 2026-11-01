@@ -35,7 +35,6 @@ from dashboard.pipeline import (
     save_manual_account,
     link_manual_transfer,
 )
-from export_mobile_report import write_mobile_report
 
 
 PET_SPRITESHEET_DIMENSIONS = (1536, 1872)
@@ -154,16 +153,6 @@ def load_pet_spritesheet(path=None, max_bytes=PET_SPRITESHEET_MAX_BYTES):
     return content, content_type
 
 
-def attach_mobile_report(dataset, payload):
-    """Best-effort static snapshot export for phone viewing."""
-    try:
-        output = write_mobile_report(dataset, payload)
-        payload["mobile_report_path"] = str(output)
-    except OSError as error:
-        payload["mobile_report_error"] = str(error)
-    return payload
-
-
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(PUBLIC), **kwargs)
@@ -248,7 +237,7 @@ class Handler(SimpleHTTPRequestHandler):
         try:
             csv_dir = self.dataset_path(dataset)
             payload = build_transactions_payload(dataset, csv_dir)
-            return self.send_json(200, attach_mobile_report(dataset, payload))
+            return self.send_json(200, payload)
         except KeyError as error:
             return self.send_json(400, {"error": str(error).strip("'")})
         except FileNotFoundError as error:
@@ -267,7 +256,7 @@ class Handler(SimpleHTTPRequestHandler):
             csv_dir = self.dataset_path(dataset)
             save = save_manual_account if path == "/api/manual-accounts" else link_manual_transfer
             payload = save(dataset, csv_dir, data)
-            return self.send_json(200, attach_mobile_report(dataset, payload))
+            return self.send_json(200, payload)
         except (ValueError, TypeError, KeyError):
             # Never echo private request values or account identifiers.
             return self.send_json(400, {"error": "Could not save. Check the account, balance, date and transfer selection."})
@@ -278,12 +267,6 @@ class Handler(SimpleHTTPRequestHandler):
             dataset = data.get("dataset", "personal")
             csv_dir = self.dataset_path(dataset)
             payload = save_balances(dataset, csv_dir, data.get("balances", []))
-            snapshot_payload = build_transactions_payload(dataset, csv_dir)
-            snapshot_result = attach_mobile_report(dataset, snapshot_payload)
-            if "mobile_report_path" in snapshot_result:
-                payload["mobile_report_path"] = snapshot_result["mobile_report_path"]
-            if "mobile_report_error" in snapshot_result:
-                payload["mobile_report_error"] = snapshot_result["mobile_report_error"]
             return self.send_json(200, payload)
         except KeyError as error:
             return self.send_json(400, {"error": str(error).strip("'")})
@@ -304,12 +287,6 @@ class Handler(SimpleHTTPRequestHandler):
                 category,
                 data.get("learn_amount_rule", True),
             )
-            snapshot_payload = build_transactions_payload(dataset, csv_dir)
-            snapshot_result = attach_mobile_report(dataset, snapshot_payload)
-            if "mobile_report_path" in snapshot_result:
-                payload["mobile_report_path"] = snapshot_result["mobile_report_path"]
-            if "mobile_report_error" in snapshot_result:
-                payload["mobile_report_error"] = snapshot_result["mobile_report_error"]
             return self.send_json(200, payload)
         except LookupError as error:
             return self.send_json(404, {"error": str(error)})
