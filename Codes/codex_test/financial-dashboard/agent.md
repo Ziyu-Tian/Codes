@@ -27,6 +27,7 @@ processed local transactions + balance snapshots
   -> dashboard/analytics_tools.py allowlisted function tools
   -> dashboard/analytics_context.py one-turn in-memory context
   -> dashboard/analytics_service.py tool-call orchestration / local fallback
+  -> dashboard/analytics_privacy.py local identifier checks before each provider request
   -> dashboard/llm_client.py optional DeepSeek Responses API
   -> server.py -> public/analytics.js
 ```
@@ -80,7 +81,8 @@ Responsibilities:
 - remove cached rows for CSV files deleted from the watched folder;
 - deduplicate overlapping CSV exports before transactions are processed;
 - preserve old JSON balances/category rules by importing them into SQLite once;
-- persist balance snapshots and category learning tables.
+- persist balance snapshots and category learning tables;
+- provide connections that commit or roll back and close on context exit, with the database file restricted to mode `0600`.
 
 CSV files remain the source of truth for transactions. The database is a local cache plus user-state store. Raw rows are kept, but `load_raw_transactions()` returns deduplicated rows: same date + account + raw amount + subcategory + memo are considered the same exported transaction, with repeated identical rows preserved up to the maximum count seen in any single source file.
 
@@ -122,7 +124,7 @@ Responsibilities:
 - define built-in category options and keyword rules;
 - create transaction fingerprints;
 - create learned amount-rule keys;
-- apply manual overrides and learned rules from `category_rules.json`;
+- apply manual overrides and learned rules from SQLite (legacy JSON is migrated once);
 - save user category changes.
 
 Rule priority:
@@ -144,6 +146,8 @@ Responsibilities:
 - `build_transactions_payload(dataset, csv_dir)`: returns the JSON shape consumed by the frontend;
 - `save_balances(...)`: validates and saves balance snapshots;
 - `save_category_rule_for_transaction(...)`: validates and saves category learning.
+- `save_manual_account(...)`: validates private account details and dated observations, then rebuilds the dashboard payload;
+- `link_manual_transfer(...)`: persists a confirmed owned-account link and optional exact-match rule, then rebuilds the payload.
 
 When adding a backend feature, first ask whether it belongs in importer, database, processor, categorizer, storage, or pipeline.
 
@@ -153,7 +157,7 @@ The only calculation source for Analytics. It consumes processed local transacti
 
 ### dashboard/manual_accounts.py
 
-Owns private manual Cash ISA/saver registration, dated balance history (integer pennies), exact matching identifiers, confirmed per-transaction links and opt-in exact-description rules. Tables are added without rewriting existing balances. Public account DTOs return only an identifier's last four digits. Pipeline applies manual transfer decisions before categorization. Manual balances never change from imported transfers; pending transfers after the latest observation are warnings only. History carries forward and never backfills before the first observation. Archived accounts retain history/matching but are excluded from active totals and exports. Existing CSV balances still use the original snapshot calculation.
+Owns private manual Cash ISA/saver registration, dated balance history (integer pennies), exact matching identifiers, confirmed per-transaction links and opt-in exact-description rules. Tables are added without rewriting existing balances. Public manual-account DTOs return only an identifier's last four digits; this does not imply that existing CSV transaction DTOs omit their original account fields. Pipeline applies manual transfer decisions before categorization. Manual balances never change from imported transfers; pending transfers after the latest observation are warnings only. History carries forward and never backfills before the first observation. Archived accounts retain history/matching but are excluded from active totals. Existing CSV balances still use the original snapshot calculation.
 
 When changing this feature, update `public/manual-accounts.js`, the web deposit chart, and `analytics_metrics.py` together. Never seed real account names, identifiers or balances into source, fixtures, or Git. Use `tests/test_manual_accounts.py` for isolated synthetic integration coverage; `tests/manual_accounts_ui.cjs` requires a fresh synthetic fixture server on port 3001.
 
@@ -206,6 +210,10 @@ User-local generated files:
 
 These are intentionally ignored by git.
 
+### Legacy report cleanup
+
+`scripts/remove_legacy_reports.py` is a cleanup-only tool. It checks recognized old report directories and requires both the generated filename and an HTML report marker. It skips symlinks; without `--delete` it only counts candidates. Keep report generation disabled. Never broaden cleanup to arbitrary HTML, CSV files, databases, or backups.
+
 ## Verification checklist
 
 After backend changes:
@@ -224,3 +232,5 @@ curl -sS 'http://127.0.0.1:3000/api/transactions?dataset=demo'
 ```
 
 Frontend changes usually only need a refresh with a new cache-busting query, e.g. `?refresh=14`.
+
+Privacy regression checks live in `tests/test_analytics_privacy.py`, `tests/test_no_report_exports.py`, and `tests/test_report_removal.py`. Use mocked provider calls and synthetic identifiers; never test leakage prevention by sending a real identifier to a provider. Update this guide for module boundaries and the README for usage, privacy behavior, and verification instructions.
