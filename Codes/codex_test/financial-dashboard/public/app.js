@@ -9,11 +9,54 @@ const shortMoney = value => new Intl.NumberFormat('en-GB', {
 const esc = value => String(value).replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
 let allTransactions = [];
 let accounts = [];
+let manualAccounts = [];
 let balanceSnapshots = {};
 let categoryOptions = [];
 let categoryExpanded = false;
 let collapsedMonths = new Set();
 let monthCollapseInitialised = false;
+
+const viewCopy = {
+  overview: {
+    eyebrow: 'MULTI-ACCOUNT OVERVIEW',
+    title: 'Your financial overview.',
+    description: 'Internal transfers are matched and excluded from income and spending.'
+  },
+  transactions: {
+    eyebrow: 'TRANSACTION ACTIVITY',
+    title: 'Your transactions.',
+    description: 'Browse, filter, and recategorise every imported transaction.'
+  }
+};
+
+function setView(view) {
+  const selected = viewCopy[view] ? view : 'overview';
+  $('#overviewView').hidden = selected !== 'overview';
+  $('#transactionsView').hidden = selected !== 'transactions';
+  $('#balanceButton').hidden = selected !== 'overview';
+  $('#addManualAccount').hidden = selected !== 'overview';
+  $('#periodFilter').hidden = false;
+  $('#pageEyebrow').textContent = viewCopy[selected].eyebrow;
+  $('#pageTitle').textContent = viewCopy[selected].title;
+  $('#pageDescription').textContent = viewCopy[selected].description;
+  document.querySelectorAll('[data-view-target]').forEach(button => {
+    const active = button.dataset.viewTarget === selected;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-current', active ? 'page' : 'false');
+  });
+  document.title = `${selected[0].toUpperCase()}${selected.slice(1)} · Personal Financial Dashboard`;
+}
+
+function viewFromHash() {
+  const view = window.location.hash.slice(1);
+  if (view === 'analytics') {
+    window.__openAnalyticsWidgetOnLoad = true;
+    window.history.replaceState(null, '', '#overview');
+    window.dispatchEvent(new CustomEvent('analytics:open-request'));
+    return 'overview';
+  }
+  return viewCopy[view] ? view : 'overview';
+}
 
 async function request(url, options = {}) {
   const response = await fetch(url, {
@@ -27,23 +70,30 @@ async function request(url, options = {}) {
 
 async function loadDashboard() {
   const dataset = $('#datasetFilter').value;
+  window.__dashboardDataReady = false;
+  window.dispatchEvent(new CustomEvent('dashboard:loading', { detail: { dataset } }));
   $('#datasetFilter').disabled = true;
   $('#transactionRows').innerHTML = '<tr><td colspan="6">Reading CSV files…</td></tr>';
   try {
     const data = await request(`/api/transactions?dataset=${encodeURIComponent(dataset)}`);
     allTransactions = data.transactions;
-    accounts = data.accounts;
+    manualAccounts = data.accounts.filter(account => account.source === 'manual');
+    accounts = data.accounts.filter(account => !account.archived);
     balanceSnapshots = data.balances || {};
     categoryOptions = data.category_options || [];
     collapsedMonths = new Set();
     monthCollapseInitialised = false;
     setupAccountFilter();
     setupPeriodFilter();
+    window.__dashboardDataReady = true;
+    window.dispatchEvent(new CustomEvent('dashboard:data-loaded', { detail: { dataset } }));
     $('#fileCount').textContent = `${data.file_count} CSV file${data.file_count === 1 ? '' : 's'} · ${accounts.length} account${accounts.length === 1 ? '' : 's'}`;
     render();
   } catch (error) {
     allTransactions = [];
+    window.__dashboardDataReady = false;
     $('#transactionRows').innerHTML = `<tr><td colspan="6">${esc(error.message)}</td></tr>`;
+    window.dispatchEvent(new CustomEvent('dashboard:data-failed', { detail: { dataset } }));
   } finally {
     $('#datasetFilter').disabled = false;
   }
@@ -59,7 +109,8 @@ function setupAccountFilter() {
 function setupPeriodFilter() {
   const select = $('#periodFilter');
   const selected = select.value || 'all';
-  const months = [...new Set(allTransactions.map(item => item.date.slice(0, 7)))]
+  const months = [...new Set([...allTransactions.map(item => item.date.slice(0, 7)),
+    ...Object.values(balanceSnapshots).filter(value => value.source === 'manual').flatMap(value => value.history.map(row => row.as_of.slice(0, 7)))])]
     .filter(Boolean)
     .sort()
     .reverse();
@@ -80,9 +131,9 @@ function filtered() {
   const account = $('#accountFilter').value;
   const period = $('#periodFilter').value;
   const days = Number(period);
-  const newest = allTransactions.length ? Math.max(...allTransactions.map(item => new Date(item.date))) : 0;
-  return allTransactions.filter(item =>
-    (account === 'all' || item.account_key === account) &&
+  const accountItems = allTransactions.filter(item => account === 'all' || item.account_key === account);
+  const newest = accountItems.length ? Math.max(...accountItems.map(item => new Date(item.date))) : 0;
+  return accountItems.filter(item =>
     (!period.startsWith('month:') || item.date.slice(0, 7) === period.slice(6)) &&
     (!days || (newest - new Date(item.date)) / 86400000 <= days)
   );
@@ -177,6 +228,7 @@ function openMetricDialog(type) {
 function estimatedPosition(account) {
   const snapshot = balanceSnapshots[account.key];
   if (!snapshot) return null;
+  if (snapshot.source === 'manual') return { current: snapshot.balance, change: 0, snapshot };
   const afterSnapshot = item => item.date > snapshot.as_of;
   if (account.type === 'credit_card') {
     const cardActivity = allTransactions
@@ -212,6 +264,12 @@ function renderPortfolio() {
     : 'Add balances to track your position';
 
   $('#accountPositions').innerHTML = positions.map(({ account, position }) => {
+    if (account.source === 'manual' && position) {
+      const pendingItems = allTransactions.filter(item => item.linked_account_key === account.key && item.date > position.snapshot.as_of);
+      const pending = -pendingItems.reduce((sum, item) => sum + item.amount, 0);
+      const warning = pendingItems.length ? `<small class="manual-pending">${pendingItems.length} transfers to reconcile · net ${money(pending)}. Total deposits may be incomplete.</small>` : '';
+      return `<div class="position-row"><span>${esc(account.label)}<small>Manual balance · ${esc(position.snapshot.as_of)} ${esc(account.identifier_hint || '')}</small>${warning}</span><strong>${money(position.current)}</strong></div>`;
+    }
     if (!position) return `<button class="position-row unset-position" data-open-balances="true"><span>${esc(account.label)}<small>No balance snapshot</small></span><strong>Set balance →</strong></button>`;
     const changeClass = position.change > 0 ? 'positive' : position.change < 0 ? 'negative' : '';
     const valueLabel = account.type === 'credit_card' ? 'estimated debt' : 'estimated balance';
@@ -223,6 +281,7 @@ function renderPortfolio() {
 function accountBalanceAt(account, targetDate) {
   const snapshot = balanceSnapshots[account.key];
   if (!snapshot || account.type === 'credit_card') return null;
+  if (snapshot.source === 'manual') return manualBalanceAt(snapshot, targetDate);
   const accountItems = allTransactions.filter(item => item.account_key === account.key);
   if (targetDate >= snapshot.as_of) {
     const movement = accountItems
@@ -242,9 +301,9 @@ function monthEnd(key, latestDate) {
   return new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
 }
 
-function openBalanceDialog() {
+function openBalanceDialog(preserveDraft = false) {
   const latestDate = allTransactions.reduce((latest, item) => item.date > latest ? item.date : latest, '');
-  $('#balanceFields').innerHTML = accounts.map(account => {
+  if (preserveDraft !== true) $('#balanceFields').innerHTML = accounts.filter(account => account.source !== 'manual').map(account => {
     const snapshot = balanceSnapshots[account.key] || {};
     const isCard = account.type === 'credit_card';
     return `<div class="balance-field" data-account-key="${esc(account.key)}">
@@ -253,8 +312,17 @@ function openBalanceDialog() {
       <label>As of date<input class="snapshot-date" type="date" value="${snapshot.as_of || latestDate}"></label>
     </div>`;
   }).join('');
+  $('#manualBalancesSection').hidden = manualAccounts.length === 0;
+  $('#manualAccountList').innerHTML = manualAccounts.map(account => {
+    const snapshot = balanceSnapshots[account.key];
+    return `<button type="button" class="manual-balance-item" data-edit-manual="${esc(account.key)}"><span><strong>${esc(account.label)}${account.archived ? ' (archived)' : ''}</strong><small>${snapshot ? `${money(snapshot.balance)} · ${esc(snapshot.as_of)}` : 'No balance recorded'}</small></span><span>Update / history →</span></button>`;
+  }).join('');
+  $('#manualAccountList').querySelectorAll('[data-edit-manual]').forEach(button => {
+    button.onclick = () => openManualAccount(button.dataset.editManual);
+  });
   $('#balanceError').textContent = '';
-  $('#balanceDialog').showModal();
+  $('#balanceForm [type="submit"]').hidden = !accounts.some(account => account.source !== 'manual');
+  if (!$('#balanceDialog').open) $('#balanceDialog').showModal();
 }
 
 async function saveBalances(event) {
@@ -275,55 +343,334 @@ async function saveBalances(event) {
       method: 'POST',
       body: JSON.stringify({ dataset: $('#datasetFilter').value, balances })
     });
-    balanceSnapshots = data.balances;
+    balanceSnapshots = { ...Object.fromEntries(Object.entries(balanceSnapshots).filter(([, value]) => value.source === 'manual')), ...data.balances };
     $('#balanceDialog').close();
-    renderPortfolio();
+    render();
   } catch (error) {
     $('#balanceError').textContent = error.message;
   }
 }
 
 function renderChart(items, externalItems) {
-  if ($('#chartMode').value === 'deposits') {
-    renderDepositsChart(items);
+  const mode = $('#chartMode').value;
+  const context = chartComparisonContext(items, externalItems, mode);
+  $('#chartComparisonSummary').hidden = true;
+  if (mode === 'deposits') {
+    renderDepositsChart(context.items, context);
+  } else if (mode === 'net') {
+    renderNetIncomeChart(context.externalItems, context);
   } else {
-    renderCashflowChart(externalItems);
+    renderCashflowChart(context.externalItems, context);
   }
 }
 
-function renderCashflowChart(items) {
-  $('#chartEyebrow').textContent = 'CASH FLOW';
-  $('#chartTitle').textContent = 'Income & spending';
-  $('#cashflowLegend').hidden = false;
-  $('#depositLegend').hidden = true;
-  $('#chart').className = 'chart';
+function accountFilteredTransactions() {
+  const account = $('#accountFilter').value;
+  return allTransactions.filter(item => account === 'all' || item.account_key === account);
+}
+
+function shiftMonthKey(key, offset) {
+  const [year, month] = key.split('-').map(Number);
+  const shifted = new Date(Date.UTC(year, month - 1 + offset, 1));
+  return shifted.toISOString().slice(0, 7);
+}
+
+function monthKeyRange(start, end) {
+  const keys = [];
+  for (let key = start; key <= end; key = shiftMonthKey(key, 1)) keys.push(key);
+  return keys;
+}
+
+function chartComparisonContext(selectedItems, selectedExternalItems, mode) {
+  const comparison = $('#chartComparison')?.value || 'selected';
+  const accountItems = accountFilteredTransactions();
+  const selectedAccount = $('#accountFilter').value;
+  const configuredDepositAccounts = mode === 'deposits'
+    ? accounts.filter(account =>
+      account.type !== 'credit_card' &&
+      (selectedAccount === 'all' || account.key === selectedAccount) &&
+      balanceSnapshots[account.key]
+    )
+    : [];
+  const configuredDepositKeys = new Set(configuredDepositAccounts.map(account => account.key));
+  const rangeItems = mode === 'deposits'
+    ? accountItems.filter(item => configuredDepositKeys.has(item.account_key))
+    : accountItems;
+  const snapshotDates = mode === 'deposits'
+    ? configuredDepositAccounts.flatMap(account => [balanceSnapshots[account.key].as_of, ...(balanceSnapshots[account.key].history || []).map(row => row.as_of)])
+    : [];
+  const availableDates = [...rangeItems.map(item => item.date), ...snapshotDates].filter(Boolean).sort();
+  const latestDate = availableDates.length ? availableDates[availableDates.length - 1] : '';
+  if (comparison === 'selected') {
+    return {
+      comparison,
+      items: selectedItems,
+      externalItems: selectedExternalItems,
+      monthKeys: null,
+      latestDate
+    };
+  }
+
+  const availableMonths = [...new Set(availableDates.map(date => date.slice(0, 7)))].sort();
+  if (!availableMonths.length) {
+    return { comparison, items: [], externalItems: [], monthKeys: [], latestDate: '' };
+  }
+  const latest = availableMonths[availableMonths.length - 1];
+  let monthKeys;
+  if (comparison === 'previous') {
+    monthKeys = [shiftMonthKey(latest, -1), latest];
+  } else {
+    const latestYear = latest.slice(0, 4);
+    const firstAvailable = availableMonths.find(key => key.startsWith(`${latestYear}-`)) || `${latestYear}-01`;
+    monthKeys = monthKeyRange(firstAvailable, latest);
+  }
+  const wanted = new Set(monthKeys);
+  const items = rangeItems.filter(item => wanted.has(item.date.slice(0, 7)));
+  return {
+    comparison,
+    items,
+    externalItems: items.filter(item => !item.excluded_from_totals),
+    monthKeys,
+    latestDate
+  };
+}
+
+function activateChartLegend(activeId) {
+  ['cashflowLegend', 'netLegend', 'depositLegend'].forEach(id => {
+    $(`#${id}`).hidden = id !== activeId;
+  });
+}
+
+function monthlyCashflow(items, monthKeys = null) {
   const groups = {};
   items.forEach(item => {
     const key = item.date.slice(0, 7);
-    groups[key] ||= { in: 0, out: 0 };
-    groups[key][item.amount > 0 ? 'in' : 'out'] += Math.abs(item.amount);
+    groups[key] ||= { income: 0, spending: 0 };
+    groups[key][item.amount > 0 ? 'income' : 'spending'] += Math.abs(item.amount);
   });
-  const months = Object.entries(groups).sort().slice(-8);
-  const max = Math.max(1, ...months.flatMap(([, values]) => [values.in, values.out]));
-  $('#chart').innerHTML = months.length ? months.map(([key, values]) => `
-    <div class="month">
-      <div class="bar-column">
-        <span class="bar-value">${shortMoney(values.in)}</span>
-        <div class="bar in" title="External income ${money(values.in)}" style="height:${values.in / max * 100}%"></div>
-      </div>
-      <div class="bar-column">
-        <span class="bar-value">${shortMoney(values.out)}</span>
-        <div class="bar out" title="External spending ${money(values.out)}" style="height:${values.out / max * 100}%"></div>
-      </div>
-      <label>${new Date(`${key}-02`).toLocaleDateString('en-GB', { month: 'short' })}</label>
-    </div>`).join('') : '<p>No external cash flow.</p>';
+  const keys = Array.isArray(monthKeys)
+    ? monthKeys
+    : Object.keys(groups).sort((left, right) => left.localeCompare(right)).slice(-8);
+  return keys.map(key => {
+    const values = groups[key] || { income: 0, spending: 0 };
+    return { key, ...values, net: values.income - values.spending };
+  });
 }
 
-function renderDepositsChart(items) {
+function renderChartComparison(context, rows, label, valueForRow) {
+  const summary = $('#chartComparisonSummary');
+  if (context.comparison === 'selected') {
+    summary.hidden = true;
+    return;
+  }
+  summary.hidden = false;
+  if (rows.length < 2) {
+    summary.innerHTML = '<p>At least two months of data are needed for this comparison.</p>';
+    return;
+  }
+  const baselineRow = rows[0];
+  const currentRow = rows[rows.length - 1];
+  const baseline = valueForRow(baselineRow);
+  const current = valueForRow(currentRow);
+  const change = current - baseline;
+  const percentage = Math.abs(baseline) > 0.005 ? change / Math.abs(baseline) * 100 : null;
+  const changeClass = change > 0 ? 'positive' : change < 0 ? 'negative' : '';
+  const arrow = change > 0 ? '↑' : change < 0 ? '↓' : '→';
+  const percentageText = percentage === null
+    ? (Math.abs(current) > 0.005 ? 'New from a zero baseline' : 'No change')
+    : `${Math.abs(percentage).toFixed(1)}% ${change > 0 ? 'higher' : change < 0 ? 'lower' : 'unchanged'}`;
+  const rangeLabels = chartMonthLabels([baselineRow, currentRow]);
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const isPartialMonth = currentRow.key === currentMonth && context.latestDate?.startsWith(currentMonth);
+  const currentPeriodLabel = `${monthLabel(currentRow.key)}${isPartialMonth ? ' to date' : ''}`;
+  const currentThrough = isPartialMonth
+    ? `<small>Through ${esc(new Date(`${context.latestDate}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))}</small>`
+    : '';
+  summary.innerHTML = `<div class="comparison-range"><span>COMPARISON</span><strong>${esc(rangeLabels.join(' – '))}</strong></div>
+    <div class="comparison-current"><span>${esc(currentPeriodLabel)} ${esc(label)}</span><strong>${money(current)}</strong>${currentThrough}</div>
+    <div class="comparison-change"><span>vs ${esc(monthLabel(baselineRow.key))}</span><strong class="${changeClass}">${arrow} ${money(Math.abs(change))}</strong><small>${esc(percentageText)}</small></div>`;
+}
+
+function chartMonthLabels(months) {
+  const years = new Set(months.map(item => item.key.slice(0, 4)));
+  return months.map(item => new Date(`${item.key}-02T12:00:00`).toLocaleDateString('en-GB',
+    years.size > 1 ? { month: 'short', year: '2-digit' } : { month: 'short' }
+  ));
+}
+
+function svgChartScale(values, signed = false) {
+  let minimum = Math.min(0, ...values);
+  let maximum = Math.max(0, ...values);
+  if (minimum === 0 && maximum === 0) {
+    minimum = signed ? -1 : 0;
+    maximum = 1;
+  }
+  const span = maximum - minimum || Math.max(Math.abs(maximum), 1);
+  if (signed || minimum < 0) {
+    minimum -= span * 0.14;
+    maximum += span * 0.14;
+  } else {
+    maximum += span * 0.18;
+  }
+  const top = 24;
+  const bottom = 188;
+  const y = value => top + (maximum - value) / (maximum - minimum) * (bottom - top);
+  return { top, bottom, y, zero: y(0) };
+}
+
+function svgChartFrame(scale, showZero) {
+  const grid = [0, 0.25, 0.5, 0.75, 1].map(step => {
+    const y = scale.top + (scale.bottom - scale.top) * step;
+    return `<line class="svg-grid-line" x1="58" x2="782" y1="${y}" y2="${y}"></line>`;
+  }).join('');
+  const zero = showZero
+    ? `<line class="svg-zero-line" x1="58" x2="782" y1="${scale.zero}" y2="${scale.zero}"></line>`
+    : '';
+  return grid + zero;
+}
+
+function svgChartX(index, count) {
+  if (count === 1) return 420;
+  return 70 + index / (count - 1) * 700;
+}
+
+function showChartEmpty(message) {
+  $('#chart').className = 'chart';
+  $('#chart').removeAttribute('aria-label');
+  $('#chart').innerHTML = `<p class="chart-empty">${esc(message)}</p>`;
+}
+
+function mountSvgChart(svg, ariaLabel) {
+  $('#chart').className = 'chart svg-chart';
+  $('#chart').setAttribute('aria-label', ariaLabel);
+  $('#chart').innerHTML = svg;
+}
+
+function renderLineChart(months, series, { title, description, signed = false, fill = false } = {}) {
+  if (!months.length) {
+    showChartEmpty('No data in this period.');
+    return;
+  }
+  const values = series.flatMap(item => item.values);
+  const scale = svgChartScale(values, signed);
+  const labels = chartMonthLabels(months);
+  const showZero = signed || values.some(value => value < 0);
+  const lineShapes = series.map(item => {
+    const points = item.values.map((value, index) => `${svgChartX(index, months.length)},${scale.y(value)}`).join(' ');
+    const area = fill && item.values.length
+      ? `<polygon class="svg-line-area" points="${svgChartX(0, months.length)},${scale.zero} ${points} ${svgChartX(months.length - 1, months.length)},${scale.zero}"></polygon>`
+      : '';
+    return `${area}<polyline class="svg-series-line" points="${points}" style="stroke:${item.color}"></polyline>`;
+  }).join('');
+  const points = series.map((item, seriesIndex) => item.values.map((value, index) => {
+    const x = svgChartX(index, months.length);
+    const y = scale.y(value);
+    const color = item.valueColor ? item.valueColor(value) : item.color;
+    const horizontalOffset = series.length > 1 ? (seriesIndex === 0 ? -12 : 12) : 0;
+    const verticalOffset = signed && value < 0 ? 18 : (series.length > 1 && seriesIndex === 1 ? 17 : -11);
+    const valueClass = signed ? (value < 0 ? 'negative-value' : 'positive-value') : '';
+    const exact = `${item.label} ${money(value)} in ${monthLabel(months[index].key)}`;
+    return `<circle class="svg-series-point" cx="${x}" cy="${y}" r="4.5" style="fill:${color}"><title>${esc(exact)}</title></circle>
+      <text class="svg-point-value ${valueClass}" x="${x + horizontalOffset}" y="${y + verticalOffset}" text-anchor="middle">${esc(shortMoney(value))}</text>`;
+  }).join('')).join('');
+  const monthText = labels.map((label, index) =>
+    `<text class="svg-axis-label" x="${svgChartX(index, months.length)}" y="222" text-anchor="middle">${esc(label)}</text>`
+  ).join('');
+  mountSvgChart(`<svg class="chart-svg" viewBox="0 0 840 230" role="img" aria-labelledby="chartSvgTitle chartSvgDescription">
+    <title id="chartSvgTitle">${esc(title)}</title><desc id="chartSvgDescription">${esc(description)}</desc>
+    ${svgChartFrame(scale, showZero)}${lineShapes}${points}${monthText}
+  </svg>`, title);
+}
+
+function renderCashflowChart(items, context) {
+  $('#chartEyebrow').textContent = 'CASH FLOW';
+  $('#chartTitle').textContent = 'Income & spending';
+  activateChartLegend('cashflowLegend');
+  const months = monthlyCashflow(items, context.monthKeys);
+  renderChartComparison(context, months, 'income', item => item.income);
+  if ($('#chartStyle').value === 'line') {
+    renderLineChart(months, [
+      { label: 'Income', color: '#327658', values: months.map(item => item.income) },
+      { label: 'Spending', color: '#e0a17c', values: months.map(item => item.spending) }
+    ], {
+      title: 'Monthly income and spending',
+      description: 'External income and spending for each visible month.'
+    });
+    return;
+  }
+  $('#chart').className = `chart${context.comparison === 'selected' ? '' : ' comparison-chart'}`;
+  $('#chart').removeAttribute('aria-label');
+  const max = Math.max(1, ...months.flatMap(item => [item.income, item.spending]));
+  const labels = chartMonthLabels(months);
+  $('#chart').innerHTML = months.length ? months.map((item, index) => `
+    <div class="month">
+      <div class="bar-column">
+        <span class="bar-value">${shortMoney(item.income)}</span>
+        <div class="bar in" title="External income ${money(item.income)}" style="height:${item.income / max * 100}%"></div>
+      </div>
+      <div class="bar-column">
+        <span class="bar-value">${shortMoney(item.spending)}</span>
+        <div class="bar out" title="External spending ${money(item.spending)}" style="height:${item.spending / max * 100}%"></div>
+      </div>
+      <label>${esc(labels[index])}</label>
+    </div>`).join('') : '<p class="chart-empty">No external cash flow in this period.</p>';
+}
+
+function renderNetIncomeChart(items, context) {
+  $('#chartEyebrow').textContent = 'NET INCOME';
+  $('#chartTitle').textContent = 'Monthly net income';
+  activateChartLegend('netLegend');
+  const months = monthlyCashflow(items, context.monthKeys);
+  renderChartComparison(context, months, 'net income', item => item.net);
+  const total = months.reduce((sum, item) => sum + item.net, 0);
+  $('#netPeriodTotal').textContent = `${total > 0 ? '+' : ''}${money(total)}`;
+  $('#netPeriodTotal').className = total < 0 ? 'negative' : 'positive';
+  if (!months.length) {
+    showChartEmpty('No external income or spending in this period.');
+    return;
+  }
+  if ($('#chartStyle').value === 'line') {
+    renderLineChart(months, [{
+      label: 'Net income',
+      color: '#416b59',
+      valueColor: value => value < 0 ? '#c16a58' : '#2f7758',
+      values: months.map(item => item.net)
+    }], {
+      title: 'Monthly net income',
+      description: 'Monthly external income minus external spending. Points above zero are a surplus and points below zero are a deficit.',
+      signed: true,
+      fill: true
+    });
+    return;
+  }
+  const values = months.map(item => item.net);
+  const scale = svgChartScale(values, true);
+  const labels = chartMonthLabels(months);
+  const plotWidth = 700;
+  const barWidth = Math.min(42, plotWidth / Math.max(months.length, 1) * 0.42);
+  const bars = months.map((item, index) => {
+    const x = svgChartX(index, months.length);
+    const valueY = scale.y(item.net);
+    const y = Math.min(valueY, scale.zero);
+    const height = Math.max(2, Math.abs(valueY - scale.zero));
+    const positive = item.net >= 0;
+    const color = positive ? '#327658' : '#cf775f';
+    const textY = positive ? y - 9 : y + height + 16;
+    return `<rect class="svg-net-bar" x="${x - barWidth / 2}" y="${y}" width="${barWidth}" height="${height}" rx="5" style="fill:${color}"><title>${esc(`Net income ${money(item.net)} in ${monthLabel(item.key)}`)}</title></rect>
+      <text class="svg-point-value ${positive ? 'positive-value' : 'negative-value'}" x="${x}" y="${textY}" text-anchor="middle">${esc(`${item.net > 0 ? '+' : ''}${shortMoney(item.net)}`)}</text>
+      <text class="svg-axis-label" x="${x}" y="222" text-anchor="middle">${esc(labels[index])}</text>`;
+  }).join('');
+  mountSvgChart(`<svg class="chart-svg" viewBox="0 0 840 230" role="img" aria-labelledby="chartSvgTitle chartSvgDescription">
+    <title id="chartSvgTitle">Monthly net income</title><desc id="chartSvgDescription">Monthly external income minus external spending. Green bars are a surplus and red bars are a deficit.</desc>
+    ${svgChartFrame(scale, true)}${bars}
+  </svg>`, 'Monthly net income');
+}
+
+function renderDepositsChart(items, context) {
   $('#chartEyebrow').textContent = 'BALANCE TREND';
   $('#chartTitle').textContent = 'Monthly total deposits';
-  $('#cashflowLegend').hidden = true;
-  $('#depositLegend').hidden = false;
+  activateChartLegend('depositLegend');
   $('#chart').className = 'chart deposit-chart';
 
   const selectedAccount = $('#accountFilter').value;
@@ -332,40 +679,54 @@ function renderDepositsChart(items) {
   );
   const configuredBankAccounts = bankAccounts.filter(account => balanceSnapshots[account.key]);
   if (!bankAccounts.length) {
-    $('#chart').innerHTML = '<p class="chart-empty">Total deposits are only available for bank accounts.</p>';
+    showChartEmpty('Total deposits are only available for bank accounts.');
     return;
   }
   if (!configuredBankAccounts.length) {
-    $('#chart').innerHTML = '<p class="chart-empty">Set bank account balances first to show monthly total deposits.</p>';
+    showChartEmpty('Set bank account balances first to show monthly total deposits.');
     return;
   }
 
   const selectedBankKeys = new Set(bankAccounts.map(account => account.key));
-  const monthKeys = [...new Set(items
+  const monthKeys = Array.isArray(context.monthKeys) ? context.monthKeys : [...new Set(items
     .filter(item => selectedBankKeys.has(item.account_key))
     .map(item => item.date.slice(0, 7)))]
     .sort()
     .slice(-8);
   const snapshotMonths = configuredBankAccounts
-    .map(account => balanceSnapshots[account.key].as_of.slice(0, 7));
-  const months = monthKeys.length ? monthKeys : [...new Set(snapshotMonths)].sort().slice(-8);
-  const latestDate = allTransactions.reduce((latest, item) => item.date > latest ? item.date : latest, '');
+    .flatMap(account => [balanceSnapshots[account.key].as_of.slice(0, 7), ...(balanceSnapshots[account.key].history || []).map(row => row.as_of.slice(0, 7))]);
+  const selectedPeriod = $('#periodFilter').value;
+  const snapshotMonthsInRange = snapshotMonths.filter(key => selectedPeriod === 'all' || (selectedPeriod.startsWith('month:') ? key === selectedPeriod.slice(6) : key >= new Date(new Date(`${context.latestDate}T12:00:00`).getTime() - Number(selectedPeriod) * 86400000).toISOString().slice(0, 7)));
+  const months = Array.isArray(context.monthKeys) ? context.monthKeys : [...new Set([...monthKeys, ...snapshotMonthsInRange])].sort().slice(-8);
+  const latestDate = context.latestDate || allTransactions.reduce((latest, item) => item.date > latest ? item.date : latest, '');
   const series = months.map(key => {
     const asOf = monthEnd(key, latestDate);
-    const total = configuredBankAccounts.reduce((sum, account) => {
-      const balance = accountBalanceAt(account, asOf);
-      return balance === null ? sum : sum + balance;
-    }, 0);
-    return { key, asOf, total };
-  });
+    const recorded = configuredBankAccounts.map(account => accountBalanceAt(account, asOf)).filter(value => value !== null);
+    return { key, asOf, total: recorded.reduce((sum, value) => sum + value, 0), recorded: recorded.length };
+  }).filter(point => point.recorded > 0);
+  renderChartComparison(context, series, 'deposits', item => item.total);
+  if ($('#chartStyle').value === 'line') {
+    renderLineChart(series, [{
+      label: 'Total deposits',
+      color: '#466d9f',
+      values: series.map(item => item.total)
+    }], {
+      title: 'Monthly total deposits',
+      description: 'Estimated bank account deposits at the end of each visible month.',
+      signed: series.some(item => item.total < 0)
+    });
+    return;
+  }
+  $('#chart').className = `chart deposit-chart${context.comparison === 'selected' ? '' : ' comparison-chart'}`;
   const max = Math.max(1, ...series.map(item => Math.abs(item.total)));
-  $('#chart').innerHTML = series.length ? series.map(item => `
+  const labels = chartMonthLabels(series);
+  $('#chart').innerHTML = series.length ? series.map((item, index) => `
     <div class="month">
       <div class="bar-column wide">
         <span class="bar-value">${shortMoney(item.total)}</span>
         <div class="bar deposit" title="Estimated total deposits ${money(item.total)} as of ${item.asOf}" style="height:${Math.abs(item.total) / max * 100}%"></div>
       </div>
-      <label>${new Date(`${item.key}-02`).toLocaleDateString('en-GB', { month: 'short' })}</label>
+      <label>${esc(labels[index])}</label>
     </div>`).join('') : '<p class="chart-empty">No monthly deposit data in this period.</p>';
 }
 
@@ -493,9 +854,11 @@ function renderTransactionRow(item) {
   const options = [...new Set([...categoryOptions, item.category])].sort((a, b) => a.localeCompare(b)).map(category =>
     `<option value="${esc(category)}" ${category === item.category ? 'selected' : ''}>${esc(category)}</option>`
   ).join('');
+  const canLink = manualAccounts.length && item.account_type !== 'credit_card' && (!item.excluded_from_totals || item.internal_reason === 'manual_account_transfer');
+  const linkAction = canLink ? `<button type="button" class="manual-link" data-link-transfer="${esc(item.transaction_fingerprint)}">${item.internal_reason === 'manual_account_transfer' ? 'Edit owned-account link' : 'Link to my savings account'}</button>` : '';
   return `<tr class="${item.transfer_type === 'internal' ? 'internal-row' : ''}">
     <td>${new Date(`${item.date}T12:00:00`).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' })}</td>
-    <td class="memo" title="${esc(description)}">${esc(description || 'Bank transaction')}</td>
+    <td class="memo" title="${esc(description)}">${esc(description || 'Bank transaction')}${linkAction}</td>
     <td><span class="type-badge ${badgeClass}">${label}</span></td>
     <td><select class="category-select" data-fingerprint="${esc(item.transaction_fingerprint)}" data-current="${esc(item.category)}">${options}<option value="__custom__">Custom…</option></select><small class="category-source">${categorySourceLabel(item.category_source)}</small></td>
     <td><strong>${esc(item.account_label)}</strong><small class="source-name">${esc(item.source)}</small></td>
@@ -573,12 +936,15 @@ function renderRows(items) {
     renderRows(items);
   });
   document.querySelectorAll('.category-select').forEach(select => select.onchange = saveTransactionCategory);
+  document.querySelectorAll('[data-link-transfer]').forEach(button => button.onclick = () => openManualTransfer(button.dataset.linkTransfer));
 }
 
 $('#datasetFilter').onchange = loadDashboard;
 $('#accountFilter').onchange = render;
 $('#periodFilter').onchange = render;
 $('#chartMode').onchange = render;
+$('#chartComparison').onchange = render;
+$('#chartStyle').onchange = render;
 $('#categoryScope').onchange = () => {
   categoryExpanded = false;
   render();
@@ -598,4 +964,11 @@ $('#cancelBalances').onclick = () => $('#balanceDialog').close();
 $('#balanceForm').onsubmit = saveBalances;
 $('#closeMetricDialog').onclick = () => $('#metricDialog').close();
 document.querySelectorAll('[data-detail]').forEach(card => card.onclick = () => openMetricDialog(card.dataset.detail));
+document.querySelectorAll('[data-view-target]').forEach(button => button.onclick = () => {
+  const view = button.dataset.viewTarget;
+  if (window.location.hash === `#${view}`) setView(view);
+  else window.location.hash = view;
+});
+window.addEventListener('hashchange', () => setView(viewFromHash()));
+setView(viewFromHash());
 loadDashboard();

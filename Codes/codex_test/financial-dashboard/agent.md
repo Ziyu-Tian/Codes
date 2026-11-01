@@ -19,6 +19,19 @@ CSV folder
   -> public/app.js dashboard rendering
 ```
 
+Analytics is a separate, read-only branch:
+
+```text
+processed local transactions + balance snapshots
+  -> dashboard/analytics_metrics.py deterministic penny aggregates
+  -> dashboard/analytics_tools.py allowlisted function tools
+  -> dashboard/analytics_context.py one-turn in-memory context
+  -> dashboard/analytics_service.py tool-call orchestration / local fallback
+  -> dashboard/analytics_privacy.py local identifier checks before each provider request
+  -> dashboard/llm_client.py optional DeepSeek Responses API
+  -> server.py -> public/analytics.js
+```
+
 ## Backend modules
 
 ### server.py
@@ -30,10 +43,17 @@ Do not put CSV parsing, account matching, transfer detection, or category learni
 Current API routes:
 
 - `GET /api/transactions?dataset=personal|demo`
+- `GET /api/analytics/status`
+- `GET /assets/pet/spritesheet`
 - `POST /api/balances`
 - `POST /api/category-rule`
+- `POST /api/manual-accounts`
+- `POST /api/manual-transfers`
+- `POST /api/analytics/chat`
+- `POST /api/analytics/settings`
+- `DELETE /api/analytics/settings`
 
-After successful API calls, `server.py` triggers a best-effort mobile snapshot export. Export failures should be reported in JSON as `mobile_report_error`, not break the dashboard response.
+API calls return local JSON only. Offline HTML snapshots and automatic iCloud exports have been removed; do not recreate financial report files as a side effect of reading or saving data.
 
 ### dashboard/config.py
 
@@ -42,6 +62,7 @@ Central paths and dataset mapping.
 - `DATASETS["personal"]` points to `../csv_input` by default, or `PFD_CSV_DIR`
 - `DATASETS["demo"]` points to `../csv_test_input` by default, or `PFD_DEMO_CSV_DIR`
 - local SQLite state lives in `financial-dashboard/data/financial_dashboard.sqlite3`
+- `PFD_PET_SPRITESHEET` optionally points to a local 8×9 pet atlas; the default is `~/.codex/pets/deepseek/spritesheet.webp`
 
 ### dashboard/storage.py
 
@@ -60,7 +81,8 @@ Responsibilities:
 - remove cached rows for CSV files deleted from the watched folder;
 - deduplicate overlapping CSV exports before transactions are processed;
 - preserve old JSON balances/category rules by importing them into SQLite once;
-- persist balance snapshots and category learning tables.
+- persist balance snapshots and category learning tables;
+- provide connections that commit or roll back and close on context exit, with the database file restricted to mode `0600`.
 
 CSV files remain the source of truth for transactions. The database is a local cache plus user-state store. Raw rows are kept, but `load_raw_transactions()` returns deduplicated rows: same date + account + raw amount + subcategory + memo are considered the same exported transaction, with repeated identical rows preserved up to the maximum count seen in any single source file.
 
@@ -102,7 +124,7 @@ Responsibilities:
 - define built-in category options and keyword rules;
 - create transaction fingerprints;
 - create learned amount-rule keys;
-- apply manual overrides and learned rules from `category_rules.json`;
+- apply manual overrides and learned rules from SQLite (legacy JSON is migrated once);
 - save user category changes.
 
 Rule priority:
@@ -124,15 +146,48 @@ Responsibilities:
 - `build_transactions_payload(dataset, csv_dir)`: returns the JSON shape consumed by the frontend;
 - `save_balances(...)`: validates and saves balance snapshots;
 - `save_category_rule_for_transaction(...)`: validates and saves category learning.
+- `save_manual_account(...)`: validates private account details and dated observations, then rebuilds the dashboard payload;
+- `link_manual_transfer(...)`: persists a confirmed owned-account link and optional exact-match rule, then rebuilds the payload.
 
 When adding a backend feature, first ask whether it belongs in importer, database, processor, categorizer, storage, or pipeline.
+
+### dashboard/analytics_metrics.py
+
+The only calculation source for Analytics. It consumes processed local transactions and balance snapshots, applies the existing `excluded_from_totals` decisions, and returns aggregate money as integer pennies. It must never return memos, account identifiers, labels, filenames, paths, or transaction rows.
+
+### dashboard/manual_accounts.py
+
+Owns private manual Cash ISA/saver registration, dated balance history (integer pennies), exact matching identifiers, confirmed per-transaction links and opt-in exact-description rules. Tables are added without rewriting existing balances. Public manual-account DTOs return only an identifier's last four digits; this does not imply that existing CSV transaction DTOs omit their original account fields. Pipeline applies manual transfer decisions before categorization. Manual balances never change from imported transfers; pending transfers after the latest observation are warnings only. History carries forward and never backfills before the first observation. Archived accounts retain history/matching but are excluded from active totals. Existing CSV balances still use the original snapshot calculation.
+
+When changing this feature, update `public/manual-accounts.js`, the web deposit chart, and `analytics_metrics.py` together. Never seed real account names, identifiers or balances into source, fixtures, or Git. Use `tests/test_manual_accounts.py` for isolated synthetic integration coverage; `tests/manual_accounts_ui.cjs` requires a fresh synthetic fixture server on port 3001.
+
+### dashboard/analytics_privacy.py
+
+Normalizes Unicode digits/formatting, rejects generic eight-digit account numbers in questions, and compares user text against locally known CSV/manual identifiers across datasets (including archived accounts and bank account suffixes). `AnalyticsDataset.private_identifiers` is backend-only; never serialize it. Recheck prior context and all provider input items before either provider request. Block with a generic error or local fallback; never echo an identifier or call the provider to decide whether text is private.
+
+### dashboard/analytics_tools.py
+
+Defines the small read-only tool allowlist and performs exact local argument validation. Never add arbitrary SQL, file-reading, transaction-search, path, or free-form account tools.
+
+### dashboard/analytics_context.py, dashboard/analytics_service.py and dashboard/llm_client.py
+
+`analytics_service.py` validates questions, executes one bounded tool-calling round, and falls back to deterministic local answers. `llm_client.py` is the optional DeepSeek Responses API adapter. The API key stays server-side and is loaded from `DEEPSEEK_API_KEY` or `data/llm_settings.json`; the latter is written through the local Analytics settings endpoint with mode `0600`.
+
+`analytics_context.py` holds one previous verified turn per random conversation ID in process memory only. Entries expire after 30 minutes, the store is capped at 64 entries, and dataset/account scope is matched through a process-local HMAC. Never accept client-provided history or persist these conversations.
+
+DeepSeek receives only the user's checked question, tool schemas, and explicitly allowlisted aggregate results. Responses API tool arguments are not trusted; local validation is mandatory. Do not log request bodies, questions, answers, tool outputs, or keys. Analytics routes must never trigger the mobile/iCloud export.
+
+Explicit user months and unambiguous metrics are resolved locally and override model arguments. Multi-month questions must cover exactly the named months and stay within the four-call bound; otherwise use the bounded local fallback. The server also overwrites model-provided account scope with the active dashboard scope. Narration requests contain no tool definitions; model narration containing DSML/tool protocol markup must never reach the UI, so render the already verified local fact instead.
 
 ## Frontend files
 
 - `public/index.html`: structure and asset version cache-busting.
 - `public/app.js`: fetches JSON, holds UI state, renders metrics/charts/tables, saves category/balance edits.
+- `public/analytics.js`: singleton floating pet/chat controller, one-turn context, status/settings and fact-card UI. Render model text with `textContent`, never as HTML.
+- `public/analytics.css`: isolated floating widget, sprite and mobile bottom-sheet styling.
+- `public/manual-accounts.js`: manual account/history dialog and owned-savings transfer confirmation UI. `Add new account` is creation-only; existing manual accounts are updated through `Set account balances`, alongside CSV bank/card balances. Returning from the manual editor preserves bank/card drafts.
 - `public/styles.css`: visual styling. It is currently compact/minified; prefer small appended overrides unless doing an intentional full reformat.
-- `export_mobile_report.py`: generates the offline, read-only mobile HTML report. It defaults to iCloud Drive `~/Library/Mobile Documents/com~apple~CloudDocs/Personal Financial Dashboard/` when available, or `financial-dashboard/export/` otherwise. Set `MOBILE_REPORT_EXPORT_DIR` to override. Reports use one timestamped filename per dataset, such as `mobile-report-personal-YYYYMMDD-HHMMSS.html`, and older generated snapshots for the same dataset are deleted before writing the new one. The changing filename avoids stale iOS Quick Look previews while still keeping only one generated snapshot per dataset. The report must work without JavaScript because some mobile file previews do not execute scripts; use static HTML plus CSS radio/label controls for interactions.
+- Mobile browsers use the live dashboard via the user's private Tailscale setup. No offline snapshot generator or iCloud report export is supported.
 
 ## Local state and privacy
 
@@ -140,15 +195,24 @@ Never modify source CSV files from app code. Treat CSV as read-only input.
 
 The repo is intended to be publishable. Keep demo data fictitious. Do not commit real CSV exports, real account numbers, real learned category rules, balance snapshots, generated SQLite files, logs, or mobile reports.
 
+The optional Analytics assistant is hybrid, not fully offline: questions and small aggregate results are sent to DeepSeek when configured. Raw rows remain local. `.env` files and API keys must never be committed.
+
+The configured pet file remains outside the repository. `server.py` may serve only that one configured regular PNG/WebP through `/assets/pet/spritesheet`; do not add path parameters, directory serving, or copy downloaded pet art into Git.
+
 User-local generated files:
 
 - `data/financial_dashboard.sqlite3`
 - `data/financial_dashboard.sqlite3-*`
+- `data/llm_settings.json`
+- `data/backups/`: private SQLite backups before account schema changes; never commit.
 - `export/*.html`
-- iCloud Drive mobile reports, usually `~/Library/Mobile Documents/com~apple~CloudDocs/Personal Financial Dashboard/mobile-report-*.html`
 - legacy backups may still exist: `data/account_balances.json`, `data/category_rules.json`
 
 These are intentionally ignored by git.
+
+### Legacy report cleanup
+
+`scripts/remove_legacy_reports.py` is a cleanup-only tool. It checks recognized old report directories and requires both the generated filename and an HTML report marker. It skips symlinks; without `--delete` it only counts candidates. Keep report generation disabled. Never broaden cleanup to arbitrary HTML, CSV files, databases, or backups.
 
 ## Verification checklist
 
@@ -156,6 +220,7 @@ After backend changes:
 
 ```bash
 python3 -m py_compile financial-dashboard/server.py financial-dashboard/dashboard/*.py
+python3 -m unittest discover -s financial-dashboard/tests -v
 ```
 
 If the server is running, restart it before API verification.
@@ -167,3 +232,5 @@ curl -sS 'http://127.0.0.1:3000/api/transactions?dataset=demo'
 ```
 
 Frontend changes usually only need a refresh with a new cache-busting query, e.g. `?refresh=14`.
+
+Privacy regression checks live in `tests/test_analytics_privacy.py`, `tests/test_no_report_exports.py`, and `tests/test_report_removal.py`. Use mocked provider calls and synthetic identifiers; never test leakage prevention by sending a real identifier to a provider. Update this guide for module boundaries and the README for usage, privacy behavior, and verification instructions.
